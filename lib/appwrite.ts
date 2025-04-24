@@ -1,4 +1,4 @@
-import { Account, Avatars, Client, Databases, ID, OAuthProvider, Query } from "react-native-appwrite"
+import { Account, Avatars, Client, Databases, ID, OAuthProvider, Query, Storage, Teams } from "react-native-appwrite"
 import * as Linking from 'expo-linking'
 import { openAuthSessionAsync } from 'expo-web-browser'
 
@@ -11,7 +11,9 @@ export const config = {
   reviewsCollectionId:process.env.EXPO_PUBLIC_APPWRITE_REVIEWS_COLLECTION_ID,
   agentsCollectionId:process.env.EXPO_PUBLIC_APPWRITE_AGENTS_COLLECTION_ID,
   propertiesCollectionId:process.env.EXPO_PUBLIC_APPWRITE_PROPERTIES_COLLECTION_ID,
-  chatsCollectionId:process.env.EXPO_PUBLIC_APPWRITE_CHATS_COLLECTION_ID
+  chatsCollectionId:process.env.EXPO_PUBLIC_APPWRITE_CHATS_COLLECTION_ID,
+  messagesCollectionId: process.env.EXPO_PUBLIC_APPWRITE_MESSAGES_COLLECTION_ID,
+  storageCollectionId: process.env.EXPO_PUBLIC_APPWRITE_STORAGE_BUCKET_COLLECTION_ID
 }
 
 export const client = new Client();
@@ -25,6 +27,14 @@ client
 export const avatar = new Avatars(client);
 export const account = new Account(client);
 export const databases = new Databases(client);
+export const teams = new Teams(client);
+
+export const DATABASE_ID = config.databaseId!;
+export const projectId = config.projectId!;
+export const storage = new Storage(client);
+export const messages = config.messagesCollectionId!;
+export const chats = config.chatsCollectionId!;
+export const storageBucket = config.storageCollectionId!
 
 export async function login() {
     try {
@@ -226,5 +236,6 @@ export function validatePropertyData(data: Partial<PropertyUpload>): {
       errors
     };
   }
+
 
   

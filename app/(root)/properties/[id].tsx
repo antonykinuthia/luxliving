@@ -37,6 +37,8 @@ const Properties = () => {
     },
   });
 
+  const handleCardPress = (id:string) => router.push(`/chats/${id}`);
+
   return (
     <SafeAreaView className="px-5 h-full">
       <ScrollView
@@ -84,7 +86,9 @@ const Properties = () => {
                 /> */}
                 <IoIosHeartEmpty className="size-7 text-white"/>
                 {/* <Image source={icons.send} className="size-7" /> */}
-                <IoIosSend  className='size-7 text-white'/>
+                <TouchableOpacity onPress={() => router.push(`/chats/${id}`)}>
+                  <IoIosSend  className='size-7 text-white'/>
+                </TouchableOpacity>
                 {/* change this to be a touchableOpacity to point to messages */}
               </View>
             </View>
@@ -158,7 +162,9 @@ const Properties = () => {
               <View className="flex flex-row items-center gap-3">
                 {/* <Image source={icons.chat} className="size-7" />
                  */}
-                 <IoChatbubbleOutline className="text-primary-300 size-7"/>
+                 <TouchableOpacity onPress={() => router.push(`/chats/${id}`)}>
+                  <IoChatbubbleOutline className="text-primary-300 size-7"/>
+                 </TouchableOpacity>
                 {/* <Image source={icons.phone} className="size-7" /> */}
                 <LiaPhoneSolid className="text-primary-300 size-7"/>
               </View>

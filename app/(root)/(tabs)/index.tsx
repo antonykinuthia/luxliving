@@ -40,7 +40,7 @@ export default function Index() {
     bathrooms: '',
     isRental: false,
     facilities: [FACILITIES[0]],
-    image: 'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?q=80&w=1920&auto=format&fit=crop',
+    image: '',
     agentId: 'default-agent',
   });
 
