@@ -1,4 +1,4 @@
-import { Account, Avatars, Client, Databases, ID, OAuthProvider, Query, Storage, Teams } from "react-native-appwrite"
+import { Account, Avatars, Client, Databases, ID, OAuthProvider, Query, Storage, Teams, } from "react-native-appwrite"
 import * as Linking from 'expo-linking'
 import { openAuthSessionAsync } from 'expo-web-browser'
 
@@ -13,7 +13,8 @@ export const config = {
   propertiesCollectionId:process.env.EXPO_PUBLIC_APPWRITE_PROPERTIES_COLLECTION_ID,
   chatsCollectionId:process.env.EXPO_PUBLIC_APPWRITE_CHATS_COLLECTION_ID,
   messagesCollectionId: process.env.EXPO_PUBLIC_APPWRITE_MESSAGES_COLLECTION_ID,
-  storageCollectionId: process.env.EXPO_PUBLIC_APPWRITE_STORAGE_BUCKET_COLLECTION_ID
+  storageCollectionId: process.env.EXPO_PUBLIC_APPWRITE_STORAGE_BUCKET_COLLECTION_ID,
+  notificationsCollectionId: process.env.EXPO_PUBLIC_APPWRITE_NOTIFICATIONS_COLLECTION_ID,
 }
 
 export const client = new Client();
@@ -237,5 +238,3 @@ export function validatePropertyData(data: Partial<PropertyUpload>): {
     };
   }
 
-
-  

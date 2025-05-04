@@ -1,149 +1,74 @@
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Platform } from 'react-native';
-import { useRouter } from 'expo-router';
-import { ChevronLeft, MoveVertical as MoreVertical, Phone } from 'lucide-react-native';
-import { ChatUser } from '../lib/index';
-import { formatLastActive } from '../utils/formatter';
+// import React from 'react';
+// import { View, Text, Image, TouchableOpacity } from 'react-native';
+// import { ArrowLeft, Phone, Video, MoveVertical as MoreVertical } from 'lucide-react-native';
+// import { useRouter } from 'expo-router';
+// import { User } from '../lib/appwrite';
 
-interface ChatHeaderProps {
-  user: ChatUser;
-  onInfoPress?: () => void;
-  onCallPress?: () => void;
-}
+// interface UserHeaderProps {
+//   user: User | null;
+//   loading?: boolean;
+//   backPath?: string;
+// }
 
-const ChatHeader: React.FC<ChatHeaderProps> = ({ 
-  user, 
-  onInfoPress,
-  onCallPress
-}) => {
-  const router = useRouter();
-  const lastActive = user.lastActive ? formatLastActive(user.lastActive) : 'Offline';
-  const isOnline = lastActive === 'Online';
-  
-  return (
-    <View style={styles.container}>
-      <TouchableOpacity
-        style={styles.backButton}
-        onPress={() => router.back()}
-      >
-        <ChevronLeft size={24} color="#1F2937" />
-      </TouchableOpacity>
-      
-      <TouchableOpacity 
-        style={styles.userInfo}
-        onPress={onInfoPress}
-      >
-        <View style={styles.avatarContainer}>
-          <View style={styles.avatar}>
-            <Text style={styles.avatarText}>
-              {user.name.charAt(0).toUpperCase()}
-            </Text>
-          </View>
-          {isOnline && <View style={styles.onlineIndicator} />}
-        </View>
+// const UserHeader = ({ user, loading = false, backPath = '/' }: UserHeaderProps) => {
+//   const router = useRouter();
+
+//   if (loading || !user) {
+//     return (
+//       <View className="flex-row items-center p-4 border-b border-gray-200 bg-white">
+//         <TouchableOpacity 
+//           onPress={() => router.push(backPath)}
+//           className="pr-3"
+//         >
+//           <ArrowLeft size={24} color="#000" />
+//         </TouchableOpacity>
         
-        <View style={styles.textContainer}>
-          <Text style={styles.nameText} numberOfLines={1}>
-            {user.name}
-          </Text>
-          <Text style={[
-            styles.statusText,
-            isOnline && styles.onlineText
-          ]}>
-            {lastActive}
-          </Text>
-        </View>
-      </TouchableOpacity>
+//         <View className="w-10 h-10 rounded-full bg-gray-200" />
+//         <View className="ml-3 flex-1">
+//           <View className="w-24 h-5 bg-gray-200 rounded" />
+//           <View className="w-16 h-4 bg-gray-100 rounded mt-1" />
+//         </View>
+//       </View>
+//     );
+//   }
+
+//   return (
+//     <View className="flex-row items-center p-4 border-b border-gray-200 bg-white">
+//       <TouchableOpacity 
+//         onPress={() => router.push(backPath)}
+//         className="pr-3"
+//       >
+//         <ArrowLeft size={24} color="#000" />
+//       </TouchableOpacity>
       
-      <View style={styles.actions}>
-        <TouchableOpacity
-          style={styles.actionButton}
-          onPress={onCallPress}
-        >
-          <Phone size={20} color="#1F2937" />
-        </TouchableOpacity>
-        
-        <TouchableOpacity
-          style={styles.actionButton}
-          onPress={onInfoPress}
-        >
-          <MoreVertical size={20} color="#1F2937" />
-        </TouchableOpacity>
-      </View>
-    </View>
-  );
-};
+//       <Image
+//         source={{ 
+//           uri: user.avatar || 
+//             `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=random` 
+//         }}
+//         className="w-10 h-10 rounded-full"
+//       />
+      
+//       <View className="ml-3 flex-1">
+//         <Text className="font-bold text-base">{user.name}</Text>
+//         <Text className="text-sm text-gray-500">
+//           {user.online ? 'Online' : 'Offline'}
+//         </Text>
+//       </View>
+      
+//       <View className="flex-row">
+//         <TouchableOpacity className="p-2">
+//           <Phone size={20} color="#000" />
+//         </TouchableOpacity>
+//         <TouchableOpacity className="p-2">
+//           <Video size={20} color="#000" />
+//         </TouchableOpacity>
+//         <TouchableOpacity className="p-2">
+//           <MoreVertical size={20} color="#000" />
+//         </TouchableOpacity>
+//       </View>
+//     </View>
+//   );
+// };
 
-const styles = StyleSheet.create({
-  container: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 8,
-    paddingVertical: 8,
-    backgroundColor: 'white',
-    borderBottomWidth: 1,
-    borderBottomColor: '#F1F5F9',
-    paddingTop: Platform.OS === 'ios' ? 48 : 8, // Adjust for iOS status bar
-  },
-  backButton: {
-    padding: 8,
-  },
-  userInfo: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginLeft: 4,
-  },
-  avatarContainer: {
-    position: 'relative',
-    marginRight: 12,
-  },
-  avatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#E2E8F0',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  avatarText: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#64748B',
-  },
-  onlineIndicator: {
-    position: 'absolute',
-    bottom: 0,
-    right: 0,
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: '#059669',
-    borderWidth: 1.5,
-    borderColor: 'white',
-  },
-  textContainer: {
-    flex: 1,
-  },
-  nameText: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#1F2937',
-  },
-  statusText: {
-    fontSize: 12,
-    color: '#64748B',
-  },
-  onlineText: {
-    color: '#059669',
-  },
-  actions: {
-    flexDirection: 'row',
-  },
-  actionButton: {
-    padding: 8,
-    marginLeft: 4,
-  },
-});
-
-export default ChatHeader;
+// export default UserHeader;

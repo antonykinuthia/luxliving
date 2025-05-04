@@ -1,217 +1,98 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, FlatList, SafeAreaView, ActivityIndicator, Platform } from 'react-native';
-import { useRouter } from 'expo-router';
-import { getUserConversations } from '@/lib/chats';
-import ConversationItem from '@/components/ConversationItem';
-import EmptyConversationList from '@/components/EmptyConversation';
-import { Conversation, ChatUser } from '@/lib/index';
-import { client } from '@/lib/appwrite';
-import { useIsFocused } from '@react-navigation/native';
-import { useGlobalContext } from '@/lib/global-provider';
+import { View, Text, FlatList, RefreshControl, TouchableOpacity } from 'react-native'
+import React, { useEffect } from 'react'
+import { ChatRooms } from '@/utils/test-data'
+import { useState } from 'react'
+import { Link, usePathname,useLocalSearchParams } from 'expo-router'
+import { ChatRoom } from '@/utils/types'
+import { databases,config } from '@/lib/appwrite'
+import { Query } from 'react-native-appwrite'
+import { set } from 'date-fns'
 
-// Mock user data (in a real app this would come from your API)
-const MOCK_USERS: Record<string, ChatUser> = {
-  'user1': {
-    id: 'user1',
-    name: 'John Smith',
-    isOnline: true,
-    lastActive: new Date(),
-  },
-  'user2': {
-    id: 'user2',
-    name: 'Sarah Johnson',
-    isOnline: false,
-    lastActive: new Date(Date.now() - 30 * 60 * 1000), // 30 minutes ago
-  },
-  'user3': {
-    id: 'user3',
-    name: 'Michael Brown',
-    isOnline: true,
-    lastActive: new Date(),
-  },
-  'user4': {
-    id: 'user4',
-    name: 'Jessica Williams',
-    isOnline: false,
-    lastActive: new Date(Date.now() - 2 * 60 * 60 * 1000), // 2 hours ago
-  },
-};
+const chat = () => {
+  const [chats, setChats] = useState<ChatRoom[]>([]);
+  const [refreshing, setRefreshing] = useState(false);
 
-export default function ChatListScreen() {
-  const router = useRouter();
-  const { user} =  useGlobalContext();
-  const isFocused = useIsFocused();
-  
-  const [conversations, setConversations] = useState<Conversation[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  
-  // Function to get the other user in the conversation
-  const getOtherUser = (conversation: Conversation): ChatUser => {
-    if (!user) return MOCK_USERS['user1']; // Fallback
-    
-    const otherUserId = conversation.participantIds.find(id => id !== user.$id);
-    return MOCK_USERS[otherUserId || 'user1'] || {
-      id: otherUserId || 'unknown',
-      name: 'Unknown User',
-      isOnline: false,
-    };
-  };
-  
-  // Load conversations
-  const loadConversations = useCallback(async () => {
-    if ( !user) {
-      setLoading(false);
-      return;
-    }
-    
+  const pathname = usePathname()
+  const { chat } = useLocalSearchParams();
+
+  useEffect(() => {
+    fetchchats()
+  }, [])
+
+  const fetchchats = async () => {
     try {
-      setLoading(true);
-      setError(null);
-      
-      const data = await getUserConversations(user.$id);
-      
-      // Sort by lastUpdated (most recent first)
-      const sortedConversations = data.sort((a, b) => 
-        b.lastUpdated.getTime() - a.lastUpdated.getTime()
-      );
-      
-      setConversations(sortedConversations);
-    } catch (err) {
-      console.error('Error loading conversations:', err);
-      setError('Failed to load conversations. Please try again.');
-      
-      // For demo purposes, set some mock data if loading fails
-      setConversations([
-        {
-          $id: 'conv1',
-          participantIds: [user.$id, 'user1'],
-          lastMessage: 'Is the property still available?',
-          lastUpdated: new Date(Date.now() - 5 * 60 * 1000), // 5 minutes ago
-          unreadCount: 2,
-        },
-        {
-          $id: 'conv2',
-          participantIds: [user.$id, 'user2'],
-          lastMessage: 'Can we schedule a viewing tomorrow?',
-          lastUpdated: new Date(Date.now() - 2 * 60 * 60 * 1000), // 2 hours ago
-          unreadCount: 0,
-        },
-        {
-          $id: 'conv3',
-          participantIds: [user.$id, 'user3'],
-          lastMessage: 'The offer has been accepted!',
-          lastUpdated: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000), // 1 day ago
-          unreadCount: 0,
-        },
-      ]);
+      const {documents, total} = await databases.listDocuments(
+        config.databaseId!,
+        config.chatsCollectionId!,
+        [
+          Query.limit(100),
+        ]
+        )
+        console.log(JSON.stringify(documents, null, 2), total);
+    } catch (error) {
+      console.log(error);
+      return [];
+    }
+  }
+
+  const handleRefresh = async () => {
+    try{
+      setRefreshing(true);
+      await fetchchats();
+    }catch(error){
+      console.log(error);
     } finally {
-      setLoading(false);
+      setRefreshing(false);
     }
-  }, [user]);
-  
-  // Load data when screen is focused or dependencies change
-  useEffect(() => {
-    if (isFocused) {
-      loadConversations();
-    }
-  }, [loadConversations, isFocused]);
-  
-  // Subscribe to real-time updates (using Appwrite realtime)
-  useEffect(() => {
-    if (!user) return;
-    
-    const unsubscribe = client.subscribe(`databases.*.collections.conversations.documents`, (response) => {
-      // Update the conversation list when changes occur
-      loadConversations();
-    });
-    
-    return () => {
-      unsubscribe();
-    };
-  }, [user, loadConversations]);
-  
-  // Navigate to individual chat
-  const handleConversationPress = (conversation: Conversation, chatUser: ChatUser) => {
-    router.push(`/chats/${chatUser.id}`);
-  };
-  
-  // Render each conversation item
-  const renderItem = ({ item }: { item: Conversation }) => {
-    const chatUser = getOtherUser(item);
-    
-    return (
-      <ConversationItem
-        conversation={item}
-        user={chatUser}
-        onPress={() => handleConversationPress(item, chatUser)}
-      />
-    );
-  };
-  
+  }
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Messages</Text>
-      </View>
-      
-      {loading ? (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#1E3A8A" />
-        </View>
-      ) : error ? (
-        <View style={styles.errorContainer}>
-          <Text style={styles.errorText}>{error}</Text>
-        </View>
-      ) : conversations.length === 0 ? (
-        <EmptyConversationList />
-      ) : (
-        <FlatList
-          data={conversations}
-          renderItem={renderItem}
-          keyExtractor={(item) => item.$id}
-          contentContainerStyle={styles.listContent}
-        />
-      )}
-    </SafeAreaView>
-  );
+    <FlatList
+     data={ChatRooms}
+     keyExtractor={item => item.$id}
+     refreshControl={<RefreshControl refreshing={false} onRefresh={handleRefresh} />}
+     renderItem={({item}) => (
+        <Link href={{
+            pathname: '/[chat]',
+            params: {
+                chat: item.$id
+            }
+        }}
+        className='p-3 bg-black-100 rounded-lg'
+        >
+            <ItemDescription 
+            title={item.title} 
+            description={item.description}
+             />
+        </Link>
+     )}
+     contentInsetAdjustmentBehavior='automatic'
+     contentContainerStyle={{padding: 16, gap: 16}}
+    />
+  )
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: 'white',
-  },
-  header: {
-    paddingHorizontal: 16,
-    paddingTop: Platform.OS === 'ios' ? 16 : 48,
-    paddingBottom: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F1F5F9',
-    backgroundColor: 'white',
-  },
-  headerTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#1F2937',
-  },
-  listContent: {
-    flexGrow: 1,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  errorContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 24,
-  },
-  errorText: {
-    fontSize: 16,
-    color: '#EF4444',
-    textAlign: 'center',
-  },
-});
+const ItemList = ({
+  title
+} : {
+  title: string
+}) => {
+  return (
+    <View className='flex-row items-center gap-1'>
+      <Text className='text-lg '>{title}</Text>
+    </View>
+  )
+}
+
+const ItemDescription = ({description,title}: {
+  description: string,
+  title: string
+})=>{
+  return (
+    <TouchableOpacity className='gap-2'>
+      <ItemList title={title}/>
+      <Text className='text-ruik-medium text-gray-500'>{description}</Text>
+    </TouchableOpacity>
+  )
+}
+
+export default chat
