@@ -90,7 +90,7 @@ const ItemDescription = ({description,title}: {
   return (
     <TouchableOpacity className='gap-2'>
       <ItemList title={title}/>
-      <Text className='text-ruik-medium text-gray-500'>{description}</Text>
+      <Text className='text-rubik-medium text-gray-500'>{description}</Text>
     </TouchableOpacity>
   )
 }

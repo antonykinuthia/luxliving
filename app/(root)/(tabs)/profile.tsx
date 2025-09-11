@@ -1,5 +1,5 @@
-import { View, Text, SafeAreaView, ScrollView,Image, TouchableOpacity, ImageSourcePropType, Alert, Button } from 'react-native'
-import React, { useMemo, useRef } from 'react'
+import { View, Text, ScrollView,Image, TouchableOpacity, ImageSourcePropType, Alert, Button, Modal } from 'react-native'
+import React, { useMemo, useRef, useState, useEffect } from 'react'
 import { GoBell } from "react-icons/go";
 import images from '@/constants/images';
 import { BiSolidEdit } from "react-icons/bi";
@@ -8,8 +8,13 @@ import { RiArrowDropRightLine, RiLogoutCircleRLine } from "react-icons/ri";
 import { settings } from '@/constants/data';
 import { useGlobalContext } from '@/lib/global-provider';
 import { logout } from '@/lib/appwrite';
-import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import BottomSheet, { BottomSheetView } from '@gorhom/bottom-sheet';
+import { useNotificationStore } from '@/utils/notificationstore';
+import NotificationsHeader from '@/components/NotificationHeader';
+import NotificationFilters from '@/components/NotificationFilters';
+import NotificationsList from '@/components/NotificationList';
+import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
+import { IoClose } from 'react-icons/io5';
+import { router } from 'expo-router';
 
 
 interface SettingsItemProps {
@@ -34,15 +39,11 @@ const SettingsItem = ({icon, title, onPress, textStyle, showArrow = true}: Setti
   </TouchableOpacity>
 )
 export default function profile() {
-  const sheetRef = useRef<BottomSheet>(null)
+  const [isVisible, setIsVisible] = useState(false);
+  const { fetchNotifications } = useNotificationStore();
   const {user, refetch} = useGlobalContext();
-  const snapPoints = useMemo(() => ['50%', '100%'], []) 
-  const handleOpen = () => sheetRef.current?.expand();
-  const handleclose = () => sheetRef.current?.close();
-
   const handleLogOut = async () => {
     const result = await logout();
-
     if(result){
       Alert.alert('success', 'You have logged out successfully');
       refetch();
@@ -50,8 +51,13 @@ export default function profile() {
       Alert.alert('error', 'oops something broke')
     }
   }
+
+  useEffect(() => {
+    fetchNotifications();
+  }, [fetchNotifications]);
+
   return (
-    <GestureHandlerRootView>
+    <SafeAreaProvider>
       <SafeAreaView className='h-full bg-white'>
         <ScrollView
         showsVerticalScrollIndicator={false}
@@ -59,7 +65,7 @@ export default function profile() {
         >
         <View className='flex flex-row justify-between items-center mt-5'>
           <Text className='text-xl font-rubik-bold'>Profile</Text>
-          <TouchableOpacity onPress={handleOpen}>
+          <TouchableOpacity onPress={() => setIsVisible(true)}>
             <GoBell className='size-5'/>
           </TouchableOpacity>
         </View>
@@ -83,11 +89,19 @@ export default function profile() {
             </View>
 
             <View className='flex flex-col mt-5 bordr-t pt-5 border-primary-200'>
-                {settings.slice(2).map((item, index) => (
-                  <SettingsItem {...item} key={index} />
-                ))}
+          
+                 <SettingsItem icon={icons.person} title='Profile'/>
+
+                  <SettingsItem icon={icons.shield} title='Security'/> 
+
+                  <SettingsItem icon={icons.language} title='Language'/>
+
+                   <SettingsItem icon={icons.info} title='Help Center'/>
+
+                <SettingsItem icon={icons.people} title='Invite Friends' onPress={() => router.push('/invite/page')}/>
+
                 <SettingsItem icon={icons.bell} title='Notifications'
-                onPress={handleOpen}/>
+                onPress={() => setIsVisible(!isVisible)}/>
             </View>
 
             <View className='flex flex-col mt-5 bordr-t pt-5 border-primary-200'>
@@ -95,16 +109,24 @@ export default function profile() {
             </View>
 
         </ScrollView>
-        <BottomSheet
-        ref={sheetRef}
-        snapPoints={snapPoints}
+        <Modal
+        animationType='fade'
+        visible={isVisible}
+        transparent={false}
+        onRequestClose={() => setIsVisible(!isVisible)}
         >
-          <BottomSheetView>
-            <Button onPress={handleclose} title='close'/>
-            <Text className='font-rubik-bold text-3xl'>All your Messages are here</Text>
-          </BottomSheetView>
-        </BottomSheet>
+          <ScrollView className='relative'>
+            <TouchableOpacity className='bg-primary-300 rounded-full absolute top-0 right-0 p-1 m-4' onPress={() => setIsVisible(!isVisible)}>
+              <IoClose className='size-6 text-white'/> 
+            </TouchableOpacity>
+              <View className='max-w-2xl mx-auto px-4 pb-16'>
+                <NotificationsHeader/>
+                <NotificationFilters/>
+                <NotificationsList/>
+              </View>
+          </ScrollView>
+        </Modal>
       </SafeAreaView>
-    </GestureHandlerRootView>
+    </SafeAreaProvider>
   )
 }

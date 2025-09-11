@@ -1,15 +1,22 @@
-import { View, Text, TouchableOpacity, Image } from 'react-native'
+import { View, Text, TouchableOpacity, Image, Platform } from 'react-native'
 import React from 'react'
 import images from '@/constants/images'
 import { CiStar, CiHeart } from "react-icons/ci";
 import icons from '@/constants/icons';
 import { Models } from 'react-native-appwrite';
+import * as Haptics from 'expo-haptics';
+import { User } from 'lucide-react';
 
 interface Props {
     item: Models.Document;
     onPress?: () => void
 }
 
+interface InviteProps {
+    name?: string;
+    status?: 'pending' | 'joined' | 'invited';
+    onPress?: () => void
+}
 export  const FeaturedCards = ({
     item: {image,item, rating, location, name, price}, onPress
 }: Props) => (
@@ -72,3 +79,61 @@ export const Cards = ({item: {image, rating, location, name, price}, onPress}: P
       </TouchableOpacity>
     )
   };  
+
+  export const InvitationCard = ({name, status, onPress}: InviteProps) => {
+    const triggerHaptic = () => {
+        if (Platform.OS === 'ios') {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        }
+    };
+
+    const  handlePress = () => {
+        triggerHaptic();
+        if (onPress) {
+            onPress();
+        }
+    }
+
+    const getStatusColor = () => {
+        switch (status) {
+            case 'joined':
+                return 'text-green-300';
+            case 'pending':
+                return '#FF9500';
+            case 'invited':
+                return '#0A84FF';
+            default:
+                return '#6B7280';
+        }
+    };
+
+    const getStatusText = () => {
+        switch (status) {
+            case 'joined':
+                return 'Joined';
+            case 'pending':
+                return 'Pending';
+            case 'invited':
+                return 'Invited';
+            default:
+                return '';
+        }
+    }
+    return(
+        <TouchableOpacity
+            onPress={handlePress}
+            activeOpacity={0.7}
+            className='flex flex-row items-center gap-3 px-4 bg-white rounded-xl mb-2 shadow-sm shadow-black-100/70'>
+            <View className='w-10 h-10 rounded-full bg-primary-300 flex items-center justify-center ml-3'>
+                <User className='size-6 text-white'/>
+            </View>
+
+            <View className='flex-1 flex-row justify-between items-center'>
+                <Text className='text-base font-rubik-bold'>{name || 'Friend'}</Text>
+                <View className='px-4 py-2 rounded-lg'>
+                    <Text className={`text-xs font-rubik-bold ${getStatusColor()}`}>{getStatusText()}</Text>
+                </View>
+            </View>
+        </TouchableOpacity>
+    )
+  }
