@@ -2,6 +2,8 @@ import { View, Text, Image } from 'react-native'
 import React from 'react'
 import { Tabs } from 'expo-router'
 import icons from '@/constants/icons'
+import { Link } from 'expo-router'
+import { CiCirclePlus } from 'react-icons/ci'
 
 const TabIcon = ({ focused, icon, title}: {focused: boolean; icon:any; title: string}) => (
     <View className='flex-1 mt-3 flex-col items-center'>
@@ -52,11 +54,14 @@ const TabsLayout = () => {
         <Tabs.Screen
         name='chat'
         options={{
-            title: 'Chat',
-            headerShown: false,
+            title: 'Messages',
+            headerShown: true,
             tabBarIcon: ({focused}) => (
                 <TabIcon focused={focused} icon={icons.chat} title="Chat" />
-            )
+            ),
+            headerRight: () => <Link href={'/NewChat'} className=" rounded-full absolute top-0 right-0 p-1 m-4 z-10">
+                <CiCirclePlus className=' rounded-full mr-4 text-white size-6 bg-primary-300'/>
+            </Link>
         }}
         />
         <Tabs.Screen

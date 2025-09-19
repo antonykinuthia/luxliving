@@ -7,17 +7,18 @@ interface ChatRoom{
     $collectionId: string;
     $databaseId: string;
     description: string;
+    imageUrl: string;
     createdAt: Date;
     upDatedAt: Date;
 }
 
 interface Message{
-    $id: string;
-    $createdAt: string;
-    $updatedAt: string;
-    $collectionId: string;
-    $databaseId: string;
-    $permissions: any[];
+    $id?: string;
+    $createdAt?: string;
+    $updatedAt?: string;
+    $collectionId?: string;
+    $databaseId?: string;
+    $permissions?: any[];
     content: string;
     senderId: string;
     senderName: string;

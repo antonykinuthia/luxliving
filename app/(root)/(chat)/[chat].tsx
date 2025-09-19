@@ -8,7 +8,7 @@ import icons from '@/constants/icons'
 import { useGlobalContext } from '@/lib/global-provider'
 import { client, config, databases } from '@/lib/appwrite'
 import { ID, Query } from 'react-native-appwrite'
-import { set } from 'date-fns'
+import { IoIosArrowRoundBack } from "react-icons/io";
 
 const chat = () => {
   const { chat: chatId } = useLocalSearchParams()
@@ -19,7 +19,7 @@ const chat = () => {
 
   const [message, setMessages] = useState<Message[]>([])
   const [chatRoom, setChatRoom] = useState<ChatRoom | null>(null);
-  const [messageConent, setMessageContent] = useState('')
+  const [messageContent, setMessageContent] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const headerHeight = Platform.OS === 'ios' ? useHeaderHeight() : 0;
 
@@ -60,10 +60,10 @@ const chat = () => {
   }
 
   const sendMessage = async () => {
-    if(messageConent.trim() === '') return;
+    if(messageContent.trim() === '') return;
     try {
       const message = {
-        content: messageConent,
+        content: messageContent,
         senderId: user?.$id,
         senderName: user?.name,
         senderAvatar: user?.avatar,
@@ -102,7 +102,7 @@ const chat = () => {
           Query.limit(100),
           Query.orderAsc('$createdAt')
         ]
-      );  
+      ); 
       setMessages(documents as Message[]);
 
     } catch (error) {
@@ -122,7 +122,12 @@ if(isLoading) {
    <>
     <Stack.Screen options={{
       title: chatRoom?.title,
-      headerShown: true 
+      headerShown: true ,
+      headerLeft: () => (
+        <Pressable onPress={() => router.push('/chat')} className='m-4 '>
+          <IoIosArrowRoundBack className='size-4'/>
+        </Pressable>
+      )
     }}/>
       <SafeAreaView className='flex-1' edges={['top', 'bottom']}>
         <KeyboardAvoidingView className='flex-1' behavior='padding'
@@ -132,39 +137,41 @@ if(isLoading) {
           renderItem={({item}) => {
             const isSender = item.senderId === user?.$id
             return (
-              <View className={`p-3 rounded-lg flex-row gap-1 max-w-[80%] ${isSender ? 'self-end' : 'self-start'}`}>
-                {!isSender && (
-                    <Image source={{uri: item.imageUrl}} className='w-7 h-7 rounded-full'/>
-                )}
-                <View className={`${isSender ? 'text-right bg-primary-300' : 'text-left bg-primary-200'} flex-1 p-3 rounded-lg`}>
-                  <Text className='font-rubik-bold text-xl'>{item.senderName}</Text>
-                  <Text>{item.content}</Text>
-                  <Text className='text-xs text-right'>
-                    {new Date(item.$createdAt).toLocaleString([], {
-                    hour: '2-digit',
-                    minute: '2-digit'
-                  })}</Text>
+              <view className='bg-black-200'>
+                <View className={`p-3 rounded-lg flex-row gap-1 max-w-[80%] ${isSender ? 'self-end' : 'self-start'}`}>
+                  {!isSender && (
+                      <Image source={{uri: item.imageUrl}} className='w-7 h-7 rounded-full'/>
+                  )}
+                  <View className={`${isSender ? 'text-right bg-primary-300' : 'text-left bg-primary-200'} flex-1 p-3 rounded-lg`}>
+                    <Text className='font-rubik-bold text-xl'>{item.senderName}</Text>
+                    <Text>{item.content}</Text>
+                    <Text className='text-xs text-right'>
+                      {new Date(item.$createdAt!).toLocaleString([], {
+                      hour: '2-digit',
+                      minute: '2-digit'
+                    })}</Text>
+                  </View>
                 </View>
-              </View>
+
+              </view>
             )
           }}
-          keyExtractor={(item) => item.$id}
+          keyExtractor={(item) => item?.$id ?? 'unknown'}
           contentContainerStyle={{padding: 10}}
           initialScrollIndex={message.length - 1}
-          
           />
 
-          <View className='flex-row items-center justify-between px-4 py-2 border border-gray-200 rounded-xl bg-primary-200 mx-3 mb-2'>
+          <View className='flex-row items-center justify-between px-4 py-2 border border-gray-200 rounded-xl bg-primary-200 mx-3 mb-2 '>
             <TextInput
-            placeholder='Message'
-            multiline
-            className='min-h-10 flex-grow p-2 flex-shrink'
-            value={messageConent}
-            onChangeText={setMessageContent}
-            placeholderTextColor={'#666876'}
+              placeholder='Message'
+              multiline
+              className='min-h-10 flex-grow p-2 flex-shrink text-black-300 font-rubik-regular focus:outline-none'
+              value={messageContent}
+              onChangeText={setMessageContent}
+              placeholderTextColor={'#666876'}
             />
-            <Pressable className='w-10 h-10 items-center justify-center' onPress={sendMessage}>
-              <Image source={icons.send} style={{width: 24, height: 24, tintColor: '#0061FF'}} />
+            <Pressable disabled={messageContent === ""} className='w-10 h-10 items-center justify-center' onPress={sendMessage}>
+              <Image source={icons.send} style={messageContent ?{width: 24, height: 24,  tintColor: '#0061FF'} : { width: 24, height: 24, tintColor: '#666876'}} />
             </Pressable>
           </View>
         </KeyboardAvoidingView>

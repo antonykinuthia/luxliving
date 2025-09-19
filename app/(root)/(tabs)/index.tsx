@@ -233,8 +233,7 @@ const handleClose = () => {
                   <Pressable onPress={handleClose} className="bg-primary-300 rounded-full p-1">
                     <IoCloseCircleOutline className="size-6 text-white"/>
                   </Pressable>
-                </View>
-
+                </View> 
                 {errors. length > 0 && (
                   <View className="bg-red-50 rounded-lg mb-4">
                     {errors.map((error, index) => (

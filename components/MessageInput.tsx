@@ -1,4 +1,4 @@
-import { View, Text, TextInput, TextInputProps } from 'react-native'
+import { TextInput, TextInputProps } from 'react-native'
 import React from 'react'
 
 const MessageInput = (props: TextInputProps) => {

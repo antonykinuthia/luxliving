@@ -23,7 +23,6 @@ const NewChat = () => {
                 {
                     title: roomName,
                     description: roomDesc,
-                    messages: [],
                 }
             )
             router.back();
