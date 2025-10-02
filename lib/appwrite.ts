@@ -172,7 +172,6 @@ export interface PropertyUpload {
     area: number;
     bedrooms: number;
     bathrooms: number;
-    isRental: boolean;
     facilities: string[];
     image: string;
     agentId: string;
@@ -193,7 +192,6 @@ export async function UploadProperty(property: PropertyUpload) {
                 area: property.area,
                 bedrooms: property.bedrooms,
                 bathrooms: property.bathrooms,
-                isRental: property.isRental,
                 facilities: property.facilities,
                 image: property.image,
                 agent: property.agentId,
@@ -238,3 +236,32 @@ export function validatePropertyData(data: Partial<PropertyUpload>): {
     };
   }
 
+export async function getAgentWithProperties({agentId}: {agentId: string}){
+try {
+    if (!agentId || typeof agentId !== 'string' || agentId.trim() === '') 
+
+    console.log('Fetching agent with ID:', agentId);
+    
+    const agent = await databases.getDocument(
+        config.databaseId!,
+        config.agentsCollectionId!,
+        agentId
+    )
+
+    const properties = await databases.listDocuments(
+        config.databaseId!,
+        config.propertiesCollectionId!,
+        [
+            Query.equal('agent', agentId)
+        ])
+
+        return {
+            agent,
+            properties: properties.documents,
+            propertiesCount: properties.total
+        }
+} catch (error) {
+    console.error('Error getting agent with properties',error);
+    return null;
+}
+}

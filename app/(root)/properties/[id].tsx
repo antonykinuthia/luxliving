@@ -144,19 +144,21 @@ const Properties = () => {
 
             <View className="flex flex-row items-center justify-between mt-4">
               <View className="flex flex-row items-center">
-                <Image
-                  source={{ uri: property?.agent.avatar }}
-                  className="size-14 rounded-full"
-                />
+                <TouchableOpacity className="flex flex-row items-center" onPress={() => router.push(`/agents/${property?.agent.$id}`)}>
+                  <Image
+                    source={{ uri: property?.agent.avatar }}
+                    className="size-14 rounded-full"
+                  />
 
-                <View className="flex flex-col items-start justify-center ml-3">
-                  <Text className="text-lg text-black-300 text-start font-rubik-bold">
-                    {property?.agent.name}
-                  </Text>
-                  <Text className="text-sm text-black-200 text-start font-rubik-medium">
-                    {property?.agent.email}
-                  </Text>
-                </View>
+                  <View className="flex flex-col items-start justify-center ml-3">
+                    <Text className="text-lg text-black-300 text-start font-rubik-bold">
+                      {property?.agent.name}
+                    </Text>
+                    <Text className="text-sm text-black-200 text-start font-rubik-medium">
+                      {property?.agent.email}
+                    </Text>
+                  </View>
+                </TouchableOpacity>
               </View>
 
               <View className="flex flex-row items-center gap-3">
