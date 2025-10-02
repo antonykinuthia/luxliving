@@ -12,7 +12,6 @@ import NoResults from '@/components/NoResult'
 
 const agent = () => {
     const {agentId} = useLocalSearchParams<{agentId: string}>();
-    const params = useLocalSearchParams();
 
     const {data: getAgentProperties, loading, refetch} = useAppwrite({
         fn: getAgentWithProperties,
@@ -29,10 +28,10 @@ const agent = () => {
     const renderProperty = ({ item }: { item: any } ) => (
         
         <TouchableOpacity onPress={() => handleCardPress(item.$id)} className='flex flex-col items-start w-75 h-80 relative p-4 rounded-lg bg-white shadow-lg shadow-black-100/70 mb-5'>
-             {item.images && item.images.length > 0 ? (
+             {item.image ? (
                 <Image 
-                    source={{ uri: item.images[0] }} 
-                    style={{ width: '100%', height: '40%', borderRadius: 16}}
+                    source={{ uri: item.image }} 
+                    style={{ width: '100%', height: '50%', borderRadius: 16}}
                     resizeMode="cover"
                     onError={(error) => {
                         console.log('Image failed to load:', item.images[0]);
