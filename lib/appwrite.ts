@@ -1,6 +1,9 @@
-import { Account, Avatars, Client, Databases, ID, OAuthProvider, Query, Storage, Teams, } from "react-native-appwrite"
+import { Account, Avatars, Client, Databases, ID, OAuthProvider, Query, Storage, Teams,   } from "react-native-appwrite"
 import * as Linking from 'expo-linking'
 import { openAuthSessionAsync } from 'expo-web-browser'
+import { Platform } from "react-native"
+import { ImagePickerAsset } from "expo-image-picker"
+import { SignInData, SignUpData, UploadResult } from "@/utils/types"
 
 export const config = {
   platform : 'com.luxliving.luxliving',
@@ -69,6 +72,32 @@ export async function login() {
         console.error(error)
         return false
     }
+}
+
+export async function signUp({email, password, name}: SignUpData){
+ try {
+    const user = await account.create(
+    ID.unique(), 
+    email, 
+    password, 
+    name);
+
+    await this.signIn({email, password});
+ } catch (error) {
+    console.error(error)
+    throw error;
+ }
+}
+
+export async function signUserIn ({email, password}: SignInData){
+ try {
+    const session = await account.createEmailPasswordSession(email, password);
+
+    return session 
+ } catch (error) {
+    console.error(error)
+    throw error;
+ }
 }
 
 export async function logout() {
@@ -163,84 +192,179 @@ export async function getPropertyById({id}: { id: string}){
     }
 }
 
-export interface PropertyUpload {
-    name: string;
-    type: string;
-    description: string;
-    location: string;
-    price: number;
-    area: number;
-    bedrooms: number;
-    bathrooms: number;
-    facilities: string[];
-    image: string;
-    agentId: string;
-  }
-
-export async function UploadProperty(property: PropertyUpload) {
+export async function uploadImage(image: string | ImagePickerAsset): Promise<string | null> {
     try {
-        const result = await databases.createDocument(
+        let file;
+
+        if(typeof image === 'string') {
+            const response = await fetch(image);
+            const blob = await response.blob();
+
+            file = new File([blob], `image_${Date.now()}.jpg`)
+        }else{
+            const response = await fetch(image.uri);
+            const blob = await response.blob();
+
+            file = new File([blob], `image_${Date.now()}.jpg`,{
+                type: image.mimeType || 'image/jpeg'
+            });
+        }
+
+        const uploadFile = await storage.createFile(
+            config.storageCollectionId!,
+            ID.unique(),
+            file
+        )
+
+        return uploadFile.$id;
+
+    } catch (error) {
+        console.error('Error uploading image:', error);
+    }
+}
+
+export async function uploadProperty(propertyData: propertyData): Promise<UploadResult> {
+    try {
+        if(!propertyData.name || !propertyData.agentId){
+            return {
+                success: false,
+                error: 'Name and Agent ID are required'
+            };
+        }
+
+        let imageId: string | null = null;
+
+        if(propertyData.image){
+            imageId = await uploadImage(propertyData.image);
+
+            if(!imageId){
+                return{
+                    success: false,
+                    error: 'Error uploading image'
+                };
+            }
+        }
+
+        const documentData = {
+            name: propertyData.name,
+            type: propertyData.type,
+            description: propertyData.description,
+            location: JSON.stringify(propertyData.location),
+            price: parseFloat(propertyData.price) || 0,
+            bedrooms: parseInt(propertyData.bedrooms) || 0,
+            bathrooms: parseInt(propertyData.bathrooms) || 0,
+            facilities: propertyData.facilities, 
+            imageId: imageId || '',
+            agentId: propertyData.agentId,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+          };
+
+          const response = await databases.createDocument(
             config.databaseId!,
             config.propertiesCollectionId!,
             ID.unique(),
-            {
-                name: property.name,
-                type: property.type,
-                description: property.description,
-                location: property.location,
-                price: property.price,
-                area: property.area,
-                bedrooms: property.bedrooms,
-                bathrooms: property.bathrooms,
-                facilities: property.facilities,
-                image: property.image,
-                agent: property.agentId,
-                rating: 5,
-                reviews: [],
-                gallery: []
-            }
-        );
-        return {
+            documentData
+          );
+
+          return {
             success: true,
-            property: result
-        }
-        
+            propertyId: response.$id
+          }
+
     } catch (error) {
-        console.error('Error uploading property',error);
-        return null;
+        console.error('Error uploading property:', error);
+        return {
+            success: false,
+            error: 'Error uploading property'
+        }
     }
 }
-export function validatePropertyData(data: Partial<PropertyUpload>): { 
-    isValid: boolean; 
-    errors: string[] 
-  } {
-    const errors: string[] = [];
-  
-    if (!data.name?.trim()) errors.push("Property name is required");
-    if (!data.type?.trim()) errors.push("Property type is required");
-    if (!data.description?.trim()) errors.push("Description is required");
-    if (!data.location?.trim()) errors.push("Location is required");
-    if (!data.price || data.price <= 0) errors.push("Valid price is required");
-    if (!data?.area || data.area <= 0) errors.push("Valid area is required");
-    if (!data?.bedrooms || data.bedrooms < 0) errors.push("Valid number of bedrooms is required");
-    if (!data?.bathrooms || data.bathrooms < 0) errors.push("Valid number of bathrooms is required");
-    if (!data.image?.trim()) errors.push("Property image is required");
-    if (!data.agentId?.trim()) errors.push("Agent ID is required");
-    if (!Array.isArray(data.facilities) || data.facilities.length === 0) {
-      errors.push("At least one facility is required");
-    }
-  
-    return {
-      isValid: errors.length === 0,
-      errors
-    };
-  }
 
+export function getImageUrl(imageId: string){
+    if(!imageId) return '';
+
+    return `https://cloud.appwrite.io/v1/storage/buckets/${config.storageCollectionId}/files/${imageId}/view?project=${config.projectId}`
+}
+
+export async function deleteProperty(propertyId: string,
+    imageId: string){
+    try {
+        if(imageId){
+            await storage.deleteFile(
+                config.storageCollectionId!,
+                imageId
+            )
+        }
+        await databases.deleteDocument(
+            config.databaseId!,
+            config.propertiesCollectionId!,
+            propertyId
+        );
+        return {success: true};
+    
+        }catch (error) {
+            console.error('Error deleting property:', error);
+            return {success: false, error: 'Error deleting property'};
+        }
+    }
+
+export async function updateProperty(propertyId: string, propertyData: Partial<PropertyData>, existingImageId?: string): Promise<UploadResult> {
+    try {
+        let imageId = existingImageId;
+
+        if(propertyData.image){
+            const newimageId = await uploadImage(propertyData.image);
+
+            if(newimageId){
+                if(existingImageId){
+                    await storage.deleteFile(
+                        config.storageCollectionId!,
+                        existingImageId
+                    )
+                }
+
+                imageId = newimageId;
+            }
+        }
+
+        const updateData: any = {
+            updateAt: new Date().toISOString()
+        };
+
+        if (propertyData.name) updateData.name = propertyData.name;
+        if (propertyData.type) updateData.type = propertyData.type;
+        if (propertyData.description) updateData.description = propertyData.description;
+        if (propertyData.location) updateData.location = JSON.stringify(propertyData.location);
+        if (propertyData.price) updateData.price = parseFloat(propertyData.price);
+        if (propertyData.bedrooms) updateData.bedrooms = parseInt(propertyData.bedrooms);
+        if (propertyData.bathrooms) updateData.bathrooms = parseInt(propertyData.bathrooms);
+        if (propertyData.facilities) updateData.facilities = propertyData.facilities;
+        if (imageId) updateData.imageId = imageId;
+
+        const response = await databases.updateDocument(
+            config.databaseId!,
+            config.propertiesCollectionId!,
+            propertyId,
+            updateData
+        )
+
+        return {
+            success: true,
+            propertyId: response.$id
+          };
+    } catch (erro:any) {
+        return {
+            success: false,
+            error:  'Failed to update property'
+          };
+    }
+}
 export async function getAgentWithProperties({agentId}: {agentId: string}){
 try {
     if (!agentId || typeof agentId !== 'string' || agentId.trim() === '') 
 
-    console.log('Fetching agent with ID:', agentId);
+    console.log('Fetching agent with ID:');
     
     const agent = await databases.getDocument(
         config.databaseId!,

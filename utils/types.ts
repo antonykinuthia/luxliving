@@ -1,3 +1,5 @@
+import { ImagePickerAsset } from "expo-image-picker";
+
 interface ChatRoom{
     $id: string;
     title: string;
@@ -31,5 +33,42 @@ interface User{
     email: string;
     avatarUrl: string;
 }
+export interface PropertyData {
+    name: string;
+    type: string;
+    description: string;
+    location: {
+      address: string;
+      city: string;
+      state: string;
+      coordinates?: {
+        latitude: number;
+        longitude: number;
+      };
+    };
+    price: string;
+    area: string;
+    bedrooms: string;
+    bathrooms: string;
+    facilities: string[];
+    image: string | ImagePickerAsset;
+    agentId: string;
+  }
 
+  export interface UploadResult {
+    success: boolean;
+    propertyId?: string;
+    error?: string;
+  }
+  export interface SignUpData {
+    email: string;
+    password: string;
+    name: string;
+  }
+
+
+export interface SignInData {
+  email: string;
+  password: string;
+}
 export type {ChatRoom, Message, User};

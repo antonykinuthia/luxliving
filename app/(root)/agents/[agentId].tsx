@@ -34,9 +34,8 @@ const agent = () => {
                     style={{ width: '100%', height: '50%', borderRadius: 16}}
                     resizeMode="cover"
                     onError={(error) => {
-                        console.log('Image failed to load:', item.images[0]);
+                        console.log('Image failed to load:', item.image);
                         console.log('Error details:', error);
-                        // setImageError(true);
                     }}
                 />
             ) : (
@@ -49,8 +48,8 @@ const agent = () => {
             <View className='absolute bottom-5 items-start inset-x-5 mt-2'>
                 <Text className="font-rubik-extra-bold text-xl text-black-300 mb-2" numberOfLines={1}>{item.name}</Text>
                 <Text className="text-black-200 mb-1 text-base">{item.location}, Kenya</Text>
-                <Text className="font-rubik-semibold text-sm text-black-300  mb-2">
-                    ksh {item.price * 130}
+                <Text className="font-rubik-semibold text-sm text-primary-300  mb-2">
+                    ksh: {item.price * 130}
                 </Text>
 
             </View>
