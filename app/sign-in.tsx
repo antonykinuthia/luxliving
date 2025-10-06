@@ -1,7 +1,7 @@
 import { View, Text, SafeAreaView, Alert, ScrollView, Image, TouchableOpacity, TextInput } from 'react-native'
 import React, { useState } from 'react'
 import { useGlobalContext } from '@/lib/global-provider'
-import { Redirect } from 'expo-router';
+import { Redirect, router } from 'expo-router';
 import { login, signUserIn } from '@/lib/appwrite';
 import images from '@/constants/images';
 import { FcGoogle } from "react-icons/fc";
@@ -96,6 +96,11 @@ const signIn = () => {
                 {isSubmitting ? 'Signing In...' : 'Sign In'}
               </Text>
             </TouchableOpacity>
+            <View className='items-end mt-2'>
+              <TouchableOpacity className='w-1/3' onPress={() => console.log('forgot password')}>
+                <Text className='text-primary-300 text-sm line-through'> forgot password</Text>
+              </TouchableOpacity>
+            </View>
             </View>
            </View>
      </ScrollView>

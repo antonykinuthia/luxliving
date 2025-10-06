@@ -3,7 +3,7 @@ import * as Linking from 'expo-linking'
 import { openAuthSessionAsync } from 'expo-web-browser'
 import { Platform } from "react-native"
 import { ImagePickerAsset } from "expo-image-picker"
-import { SignInData, SignUpData, UploadResult } from "@/utils/types"
+import { PropertyData, UploadResult } from "@/utils/types"
 
 export const config = {
   platform : 'com.luxliving.luxliving',
@@ -214,20 +214,29 @@ export async function uploadImage(image: string | ImagePickerAsset): Promise<str
             });
         }
 
+        const fileForUpload = {
+            name: file.name,
+            type: file.type,
+            size: file.size,
+            uri: typeof image === 'string' ? image : image.uri
+          };
+
         const uploadFile = await storage.createFile(
             config.storageCollectionId!,
             ID.unique(),
-            file
+            fileForUpload
         )
 
         return uploadFile.$id;
 
     } catch (error) {
         console.error('Error uploading image:', error);
+        return null;
     }
 }
 
-export async function uploadProperty(propertyData: propertyData): Promise<UploadResult> {
+
+export async function uploadProperty(propertyData: PropertyData): Promise<UploadResult> {
     try {
         if(!propertyData.name || !propertyData.agentId){
             return {
@@ -393,3 +402,30 @@ try {
     return null;
 }
 }
+
+export async function sendPasswordResetEmail(email: string) {
+    try {
+      // Replace with your actual password reset URL
+      const resetUrl = 'https://yourapp.com/reset-password';
+      await account.createRecovery(email, resetUrl);
+      return true;
+    } catch (error: any) {
+      console.error('Password reset error:', error);
+      throw new Error(error.message || 'Failed to send reset email');
+    }
+  }
+  
+  // Complete Password Reset
+  export async function completePasswordReset(
+    userId: string, 
+    secret: string, 
+    newPassword: string
+  ) {
+    try {
+      await account.updateRecovery(userId, secret, newPassword);
+      return true;
+    } catch (error: any) {
+      console.error('Complete password reset error:', error);
+      throw new Error(error.message || 'Failed to reset password');
+    }
+  }

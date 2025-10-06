@@ -47,6 +47,7 @@ export default function profile() {
     if(result){
       Alert.alert('success', 'You have logged out successfully');
       refetch();
+      router.push('/sign-up');
     }else{
       Alert.alert('error', 'oops something broke')
     }
@@ -78,8 +79,8 @@ export default function profile() {
               <BiSolidEdit  className='size-6'/>
               {/* TODO implement the edit photo functionality. */}
             </TouchableOpacity>
-            <Text className='text-2xl font-rubik-bold mt-2'>1764 | Crazy dev.</Text>
-                {/* <Text className='text-2xl font-rubik-bold mt-2'>{user?.name}</Text> */}
+            {/* <Text className='text-2xl font-rubik-bold mt-2'>1764 | Crazy dev.</Text> */}
+                <Text className='text-2xl font-rubik-bold mt-2'>{user?.name}</Text>
           </View>
         </View>
 

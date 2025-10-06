@@ -38,16 +38,14 @@ export interface PropertyData {
     type: string;
     description: string;
     location: {
-      address: string;
       city: string;
-      state: string;
+      county: string;
       coordinates?: {
         latitude: number;
         longitude: number;
       };
     };
     price: string;
-    area: string;
     bedrooms: string;
     bathrooms: string;
     facilities: string[];

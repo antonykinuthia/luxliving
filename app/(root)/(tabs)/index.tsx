@@ -134,8 +134,6 @@ export default function Index() {
       if (result.success) {
         setSuccess(true);
         Alert.alert('Success', 'Property uploaded successfully!');
-        
-        // Reset form after successful upload
         setFormData({
           name: '',
           type: PROPERTY_TYPES[0],
