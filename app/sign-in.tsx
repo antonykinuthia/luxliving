@@ -32,11 +32,11 @@ const signIn = () => {
       setIsSubmitting(true);
 
       try {
-        const resposnse = await signUserIn({email, password});
+        const response = await signUserIn(email, password);
 
-        if(resposnse){
+        if(response){
           refetch();
-          console.log('hooray we Cooking now')
+          console.log('hooray we are Cooking now')
         }else{
           Alert.alert('something broke oops😞')
         }
@@ -60,10 +60,7 @@ const signIn = () => {
               Welcome to LuxLiving
             </Text>
             <Text className='text-3xl font-rubik-bold text-black-300 text-center mt-2'>
-               let's Get You Closer to {"\n"}
-               <Text className='text-primary-300'>
-               Your Dream Residence
-               </Text>
+               Sign In to continue
             </Text>
 
             <View className='mt-8'>
@@ -100,19 +97,6 @@ const signIn = () => {
               </Text>
             </TouchableOpacity>
             </View>
-
-            <Text className='text-lg font-rubik text-black-200 text-center mt-12'>
-              Login to LuxLiving with Google
-            </Text>
-
-            
-
-            <TouchableOpacity onPress={handleLogin} className='bg-white shadow-md shadow-zinc-300 rounded-full w-full py-4 mt-5'>
-              <View className='flex flex-row items-center justify-center'>
-                <FcGoogle className='w-6 h-6'/>
-                <Text className='text-center text-lg font-rubik-medium text-black-300 ml-2'>Login with Google</Text>
-              </View>
-            </TouchableOpacity>
            </View>
      </ScrollView>
     </SafeAreaView>

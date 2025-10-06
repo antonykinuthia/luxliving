@@ -19,7 +19,6 @@ import { IoHomeOutline } from "react-icons/io5";
 import { MdOutlineErrorOutline } from "react-icons/md";
 import { TiTickOutline } from "react-icons/ti";
 import { LiaMoneyBillWaveAltSolid } from "react-icons/lia";
-import { ChartArea } from "lucide-react";
 import icons from "@/constants/icons";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 
@@ -95,7 +94,6 @@ export default function Index() {
 
   const handleClose = () => {
     setIsOpen(!isOpen);
-    // Reset form and states when closing
     setSuccess(false);
     setErrors([]);
   };

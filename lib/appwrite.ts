@@ -74,26 +74,30 @@ export async function login() {
     }
 }
 
-export async function signUp({email, password, name}: SignUpData){
- try {
-    const user = await account.create(
-    ID.unique(), 
-    email, 
-    password, 
-    name);
+export async function signUserIn(email:string, password:string, ){
+    try {
+        const session = await account.createEmailPasswordSession(email, password, );
 
-    await this.signIn({email, password});
- } catch (error) {
-    console.error(error)
-    throw error;
- }
+        if(!session) throw new Error(' failed to create a session oops😞');
+        return session;
+    } catch (error) {
+        console.error('Login error:', error);
+    }
 }
-
-export async function signUserIn ({email, password}: SignInData){
+export async function signUserUp (email: string, password: string, name:string){
  try {
-    const session = await account.createEmailPasswordSession(email, password);
+    const newUser = await account.create(
+        ID.unique(),
+        email,
+        password,
+        name
+    );
 
-    return session 
+    if(!newUser) throw new Error('something broke oops😞');
+
+   const session = await  signUserIn(email, password);
+
+   return {session, user: newUser};
  } catch (error) {
     console.error(error)
     throw error;
