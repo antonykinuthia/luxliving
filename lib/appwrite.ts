@@ -4,6 +4,7 @@ import { openAuthSessionAsync } from 'expo-web-browser'
 import { Platform } from "react-native"
 import { ImagePickerAsset } from "expo-image-picker"
 import { PropertyData, UploadResult } from "@/utils/types"
+import { router } from "expo-router"
 
 export const config = {
   platform : 'com.luxliving.luxliving',
@@ -415,7 +416,6 @@ export async function sendPasswordResetEmail(email: string) {
     }
   }
   
-  // Complete Password Reset
   export async function completePasswordReset(
     userId: string, 
     secret: string, 

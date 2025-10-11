@@ -8,8 +8,7 @@ interface ChatRoom{
     $permissions: any[];
     $collectionId: string;
     $databaseId: string;
-    description: string;
-    imageUrl: string;
+    receiverAvatar: string;
     createdAt: Date;
     upDatedAt: Date;
 }
@@ -24,8 +23,8 @@ interface Message{
     content: string;
     senderId: string;
     senderName: string;
-    imageUrl: string;
-    chatRoomId: string;
+    senderPhoto: string;
+    chatId: string;
 }
 
 interface User{

@@ -93,7 +93,7 @@ const agent = () => {
                 </View>
             </View>
                 <View className='mt-6 flex flex-row gap-2'>
-                    <TouchableOpacity className='bg-primary-300 rounded-xl py-3 px-3 w-1/2'>
+                    <TouchableOpacity className='bg-primary-300 rounded-xl py-3 px-3 w-1/2' onPress={() => router.push(`/chat/${getAgentProperties?.agent?.$id}`)}>
                         <Text className='font-rubik-semibold text-white text-center text-sm'>
                             Message
                         </Text>

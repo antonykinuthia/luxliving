@@ -16,17 +16,6 @@ const signIn = () => {
     if(!loading && isLoggedIn) return <Redirect href='/'/>
 
 
-    const handleLogin = async() => {
-        const result = await login();
-
-        if(result){
-            refetch();
-            console.log('hooray we Cooking now')
-        }else {
-            Alert.alert('something broke oops😞')
-        }
-    }
-
     const handleEmailLogIn = async() => {
       if(!email || !password) return Alert.alert('Please fill all the fields');
       setIsSubmitting(true);
@@ -98,7 +87,7 @@ const signIn = () => {
             </TouchableOpacity>
             <View className='items-end mt-2'>
               <TouchableOpacity className='w-1/3' onPress={() => console.log('forgot password')}>
-                <Text className='text-primary-300 text-sm line-through'> forgot password</Text>
+                <Text className='text-primary-300 text-sm underline'> forgot password</Text>
               </TouchableOpacity>
             </View>
             </View>

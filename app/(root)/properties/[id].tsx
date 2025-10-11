@@ -24,6 +24,7 @@ import { facilities } from "@/constants/data";
 
 import { useAppwrite } from "@/lib/useAppwrite";
 import { getPropertyById } from "@/lib/appwrite";
+import DirectMessage from "@/components/DirectMessage";
 
 const Properties = () => {
   const { id } = useLocalSearchParams<{ id?: string }>();
@@ -36,8 +37,6 @@ const Properties = () => {
       id: id!,
     },
   });
-
-  const handleCardPress = (id:string) => router.push(`/chat/${id}`);
 
   return (
     <SafeAreaView className="px-5 h-full">
@@ -85,7 +84,6 @@ const Properties = () => {
                   tintColor={"#191D31"}
                 /> */}
                 <IoIosHeartEmpty className="size-7 text-white"/>
-                {/* <Image source={icons.send} className="size-7" /> */}
                 <TouchableOpacity onPress={() => router.push(`/chat/${id}`)}>
                   <IoIosSend  className='size-7 text-white'/>
                 </TouchableOpacity>
@@ -164,9 +162,10 @@ const Properties = () => {
               <View className="flex flex-row items-center gap-3">
                 {/* <Image source={icons.chat} className="size-7" />
                  */}
-                 <TouchableOpacity onPress={() => router.push(`/chat/${id}`)}>
-                  <IoChatbubbleOutline className="text-primary-300 size-7"/>
-                 </TouchableOpacity>
+                 <DirectMessage
+                  targetId={property?.agent.$id}
+                  targetName={property?.agent.name}
+                 />
                 {/* <Image source={icons.phone} className="size-7" /> */}
                 <LiaPhoneSolid className="text-primary-300 size-7"/>
               </View>

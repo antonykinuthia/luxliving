@@ -15,7 +15,6 @@ const signUp = () => {
 
   if (!loading && isLoggedIn) return <Redirect href='/' />
 
-  // Google OAuth signup
   const handleGoogleSignup = async () => {
     const result = await login();
 
@@ -27,7 +26,6 @@ const signUp = () => {
     }
   }
 
-  // Email/Password signup
   const handleEmailSignup = async () => {
     if (!name || !email || !password) {
       Alert.alert('Error', 'Please fill in all fields');

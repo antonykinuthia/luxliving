@@ -59,7 +59,7 @@ const TabsLayout = () => {
             tabBarIcon: ({focused}) => (
                 <TabIcon focused={focused} icon={icons.chat} title="Chat" />
             ),
-            headerRight: () => <Link href={'/NewChat'} className=" rounded-full absolute top-0 right-0 p-1 m-4 z-10">
+            headerRight: () => <Link href={'/chat/NewChat'} className=" rounded-full absolute top-0 right-0 p-1 m-4 z-10">
                 <CiCirclePlus className=' rounded-full mr-4 text-white size-6 bg-primary-300'/>
             </Link>
         }}
