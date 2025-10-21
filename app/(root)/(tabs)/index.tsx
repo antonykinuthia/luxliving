@@ -1,13 +1,12 @@
-import { Button, Text, TouchableOpacity, View, FlatList, Image, ActivityIndicator, Modal, Pressable, ScrollView, TextInput, Alert, } from "react-native";
+import { Button, Text, TouchableOpacity, View, FlatList, Image, ActivityIndicator, Modal, Pressable, ScrollView, TextInput, Alert } from "react-native";
 import { useEffect, useState } from "react";
 import { GoBell } from "react-icons/go";
 import Search from "@/components/Search";
 import Filters from "@/components/Filters";
 import { useLocalSearchParams, router } from "expo-router";
 import { useAppwrite } from "@/lib/useAppwrite";
-import { getLatestProperties, getProperties, uploadProperty } from "@/lib/appwrite";
+import { getLatestProperties, getProperties, uploadProperty, getReels, toggleLike, incrementView } from "@/lib/appwrite";
 import * as ImagePicker from 'expo-image-picker';
-
 import { useGlobalContext } from "@/lib/global-provider";
 import { Cards, FeaturedCards } from "@/components/Cards";
 import NoResults from "@/components/NoResult";
@@ -21,17 +20,37 @@ import { TiTickOutline } from "react-icons/ti";
 import { LiaMoneyBillWaveAltSolid } from "react-icons/lia";
 import icons from "@/constants/icons";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
+import ReelsPlayer from "@/components/Reels";
+import seedReels from "@/lib/seed";
+
+interface PropertyReel {
+  $id: string;
+  videoUrl: string;
+  thumbnailUrl: string;
+  userId: string;
+  username: string;
+  description: string;
+  likes: number;
+  views: number;
+  isLiked?: boolean;
+  $createdAt: string;
+  location: string;
+  price: number;
+}
 
 export default function Index() {
   const [isLoading, setIsLoading] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const [success, setSuccess] = useState(false);
   const [errors, setErrors] = useState<string[]>([]);
-  
+  const [reelsModalOpen, setReelsModalOpen] = useState(false);
+  const [isLoadingReels, setIsLoadingReels] = useState(false);
+  const [propertyReels, setPropertyReels] = useState<PropertyReel[]>([]);
+  const [reelsPage, setReelsPage] = useState(0);
+
   const params = useLocalSearchParams<{ query?: string; filter: string }>();
   const { user } = useGlobalContext();
-  
-  // Initialize formData with user ID from context
+
   const [formData, setFormData] = useState({
     name: '',
     type: PROPERTY_TYPES[0],
@@ -45,7 +64,7 @@ export default function Index() {
     bathrooms: '',
     facilities: [] as string[],
     image: '',
-    agentId: user?.$id || '', 
+    agentId: user?.$id || '',
   });
 
   const { data: latestProperties, loading: latestPropertiesLoading } = useAppwrite({
@@ -70,14 +89,75 @@ export default function Index() {
     });
   }, [params.filter, params.query]);
 
-  // Update agentId when user changes
   useEffect(() => {
     if (user?.$id) {
       setFormData(prev => ({ ...prev, agentId: user.$id }));
     }
   }, [user]);
 
+  // Load reels when modal opens
+  useEffect(() => {
+    if (reelsModalOpen && propertyReels.length === 0) {
+      loadPropertyReels();
+    }
+  }, [reelsModalOpen]);
+
+  const loadPropertyReels = async () => {
+    try {
+      setIsLoadingReels(true);
+      const reels = await getReels(10, reelsPage * 10);
+      if (reels) {
+        setPropertyReels(prev => [...prev, ...reels]);
+        setReelsPage(prev => prev + 1);
+      }
+    } catch (error) {
+      console.error('Error loading reels:', error);
+      Alert.alert('Error', 'Failed to load reels');
+    } finally {
+      setIsLoadingReels(false);
+    }
+  };
+
   const handleCardPress = (id: string) => router.push(`/properties/${id}`);
+
+  const handleReelLike = async (reelId: string, isLiked: boolean) => {
+    try {
+      const reel = propertyReels.find(r => r.$id === reelId);
+      if (!reel) return;
+
+      await toggleLike(reelId, reel.likes, isLiked);
+      
+      setPropertyReels(prev =>
+        prev.map(reel =>
+          reel.$id === reelId
+            ? { ...reel, likes: isLiked ? reel.likes + 1 : reel.likes - 1, isLiked }
+            : reel
+        )
+      );
+    } catch (error) {
+      console.error('Error toggling like:', error);
+      Alert.alert('Error', 'Failed to update like');
+    }
+  };
+
+  const handleReelViewChange = async (reelId: string) => {
+    try {
+      const reel = propertyReels.find(r => r.$id === reelId);
+      if (!reel) return;
+
+      await incrementView(reelId, reel.views);
+      
+      setPropertyReels(prev =>
+        prev.map(r =>
+          r.$id === reelId
+            ? { ...r, views: r.views + 1 }
+            : r
+        )
+      );
+    } catch (error) {
+      console.error('Error updating view:', error);
+    }
+  };
 
   const pickImage = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -98,7 +178,6 @@ export default function Index() {
     setErrors([]);
   };
 
-  // Validation function
   const validateForm = () => {
     const newErrors: string[] = [];
 
@@ -117,11 +196,9 @@ export default function Index() {
   };
 
   const handleSubmit = async () => {
-    // Clear previous errors
     setErrors([]);
     setSuccess(false);
 
-    // Validate form
     if (!validateForm()) {
       return;
     }
@@ -150,14 +227,12 @@ export default function Index() {
           agentId: user?.$id || '',
         });
 
-        // Refetch properties to show the new one
         refetch({
           filter: params.filter!,
           query: params.query!,
           limit: 6
         });
 
-        // Close modal after 2 seconds
         setTimeout(() => {
           setIsOpen(false);
           setSuccess(false);
@@ -175,7 +250,6 @@ export default function Index() {
     }
   };
 
-  // Toggle facility selection
   const toggleFacility = (facility: string) => {
     setFormData(prev => ({
       ...prev,
@@ -215,6 +289,50 @@ export default function Index() {
               </View>
               <Search />
 
+             
+              <TouchableOpacity 
+                onPress={() => setReelsModalOpen(true)}
+                activeOpacity={0.85}
+                className="my-6 bg-gradient-to-br from-primary-100 via-primary-50 to-white rounded-3xl overflow-hidden border border-primary-200 shadow-sm"
+              >
+                <View className="p-5">
+                  {/* Header Section */}
+                  <View className="flex-row items-center justify-between mb-4">
+                    <View className="flex-row items-center gap-3 flex-1">
+                      <View className="bg-primary-300 rounded-full p-2">
+                        <Text className="text-2xl">🎬</Text>
+                      </View>
+                      <View className="flex-1">
+                        <Text className="text-lg font-rubik-bold text-black-300">Property Reels</Text>
+                        <Text className="text-xs text-primary-300 font-rubik-semibold mt-0.5">Discover & Explore</Text>
+                      </View>
+                    </View>
+                    <View className="bg-primary-300 rounded-full px-3 py-1.5">
+                      <Text className="text-white text-xs font-rubik-bold">Tap</Text>
+                    </View>
+                  </View>
+
+                  {/* Description */}
+                  <Text className="text-sm text-black-300 mb-4 font-rubik leading-5">
+                    Watch immersive property tours and agent spotlights
+                  </Text>
+
+                  {/* CTA Section */}
+                  <View className="flex-row items-center justify-between">
+                    <View className="flex-row items-center gap-2 bg-white rounded-lg px-3 py-2 flex-1 mr-3 border border-primary-200">
+                      <Text className="text-xl">📺</Text>
+                      <Text className="text-xs font-rubik-semibold text-black-300">Full Screen</Text>
+                    </View>
+                    <View className="bg-primary-300/10 rounded-lg px-3 py-2">
+                      <Text className="text-primary-300 font-rubik-bold text-sm">→</Text>
+                    </View>
+                  </View>
+                </View>
+
+                {/* Gradient divider */}
+                <View className="h-1 bg-gradient-to-r from-primary-300 via-primary-200 to-transparent" />
+              </TouchableOpacity>
+
               <View className="my-5">
                 <View className="flex flex-row items-center justify-between">
                   <Text className="text-xl font-rubik-bold text-black-300">Featured</Text>
@@ -243,32 +361,84 @@ export default function Index() {
               </View>
 
               <Filters />
-
             </View>
           }
         />
 
       </SafeAreaView>
-      <TouchableOpacity onPress={() => setIsOpen(true)} className="bg-primary-300 rounded-full absolute top-0 right-0 p-1 m-4 z-10">
+      <Modal
+        animationType="slide"
+        transparent={false}
+        visible={reelsModalOpen}
+        onRequestClose={() => setReelsModalOpen(false)}
+        presentationStyle="fullScreen"
+      >
+        <SafeAreaView className="flex-1 bg-black">
+          {/* Close Button */}
+          <View className="absolute top-4 right-4 z-50">
+            <Pressable 
+              onPress={() => setReelsModalOpen(false)}
+              className="bg-black/50 rounded-full p-2 active:bg-black/70"
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            >
+              <IoCloseCircleOutline className="size-7 text-white" />
+            </Pressable>
+          </View>
+
+          {isLoadingReels && propertyReels.length === 0 ? (
+            <View className="flex-1 justify-center items-center bg-black">
+              <ActivityIndicator size="large" color="#FF6B35" />
+              <Text className="text-white mt-4 font-rubik">Loading reels...</Text>
+            </View>
+          ) : propertyReels.length === 0 ? (
+            <View className="flex-1 justify-center items-center">
+              <Text className="text-white text-center text-lg font-rubik">
+                No reels available yet
+              </Text>
+            </View>
+          ) : (
+            <View className="flex-1">
+              <ReelsPlayer
+                Videos={propertyReels}
+                onEndReached={loadPropertyReels}
+                onLike={handleReelLike}
+                onViewChange={handleReelViewChange}
+              />
+            </View>
+          )}
+
+          {/* Bottom gradient fade for better UX */}
+          <View className="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-black/50 to-transparent" />
+        </SafeAreaView>
+      </Modal>
+
+      {/* UPLOAD PROPERTY MODAL */}
+      <TouchableOpacity 
+        onPress={() => setIsOpen(true)} 
+        className="bg-primary-300 rounded-full absolute bottom-20 right-4 p-1 z-10 shadow-lg active:opacity-80"
+        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+      >
         <CiCirclePlus className="size-6 text-white" />
       </TouchableOpacity>
+
       <Modal
         animationType="slide"
         transparent={false}
         visible={isOpen}
-        onRequestClose={handleClose}>
-        <ScrollView className="relative flex-1">
+        onRequestClose={handleClose}
+      >
+        <ScrollView className="relative flex-1 bg-white">
           <View className="p-5">
-            <View className="flex flex-row items-center justify-between">
-              <View className="flex-row items-center gap-3 mb-6">
+            <View className="flex flex-row items-center justify-between mb-6">
+              <View className="flex-row items-center gap-3">
                 <IoHomeOutline className="size-6 text-primary-300" />
                 <Text className="text-2xl font-rubik-bold text-black-300">List Your Property</Text>
               </View>
-              <Pressable onPress={handleClose} className="bg-primary-300 rounded-full p-1">
+              <Pressable onPress={handleClose} className="bg-primary-300 rounded-full p-1 active:bg-primary-400">
                 <IoCloseCircleOutline className="size-6 text-white" />
               </Pressable>
             </View>
-            
+
             {errors.length > 0 && (
               <View className="bg-red-50 rounded-lg p-3 mb-4">
                 {errors.map((error, index) => (
@@ -279,7 +449,7 @@ export default function Index() {
                 ))}
               </View>
             )}
-            
+
             {success && (
               <View className="bg-green-50 rounded-lg p-3 mb-4 flex-row items-center gap-2">
                 <TiTickOutline className="size-6 text-green-600" />
@@ -289,7 +459,8 @@ export default function Index() {
 
             <TouchableOpacity
               onPress={pickImage}
-              className="bg-white border-2 border-dashed border-gray-300 rounded-lg p-4 mb-6 items-center justify-center h-48">
+              className="bg-white border-2 border-dashed border-gray-300 rounded-lg p-4 mb-6 items-center justify-center h-48 active:bg-gray-50"
+            >
               {formData.image ? (
                 <Image
                   source={{ uri: formData.image }}
@@ -345,7 +516,6 @@ export default function Index() {
                   />
                 </View>
               </View>
-             
             </View>
 
             <View className="flex-row gap-3 mb-4">
@@ -414,7 +584,6 @@ export default function Index() {
               </View>
             </View>
 
-            {/* Optional: Facilities selection */}
             {FACILITIES && FACILITIES.length > 0 && (
               <View className="mb-4">
                 <Text className="text-sm font-rubik-semibold text-black-300 mb-2">Facilities</Text>
@@ -427,7 +596,8 @@ export default function Index() {
                         formData.facilities.includes(facility)
                           ? 'bg-primary-300 border-primary-300'
                           : 'bg-white border-gray-300'
-                      }`}>
+                      }`}
+                    >
                       <Text className={`text-sm ${
                         formData.facilities.includes(facility)
                           ? 'text-white font-rubik-medium'
@@ -442,9 +612,10 @@ export default function Index() {
             )}
 
             <TouchableOpacity
-              className={`bg-primary-300 p-4 rounded-xl items-center mt-6 ${isLoading ? 'opacity-70' : ''}`}
+              className={`bg-primary-300 p-4 rounded-xl items-center mt-6 mb-6 ${isLoading ? 'opacity-70' : 'active:opacity-90'}`}
               onPress={handleSubmit}
-              disabled={isLoading}>
+              disabled={isLoading}
+            >
               {isLoading ? (
                 <ActivityIndicator color="#fff" />
               ) : (

@@ -1,135 +1,188 @@
 import { ID } from "react-native-appwrite";
 import { databases, config } from "./appwrite";
-import {
-  agentImages,
-  galleryImages,
-  propertiesImages,
-  reviewImages,
-} from "./data";
 
-const COLLECTIONS = {
-  AGENT: config.agentsCollectionId,
-  REVIEWS: config.reviewsCollectionId,
-  GALLERY: config.galleriesCollectionId,
-  PROPERTY: config.propertiesCollectionId,
-};
-
-const propertyTypes = [
-  "House", "Townhouse", "Condo", "Duplex", "Studio", "Villa", "Apartment", "Rental","Others"
+// Sample video URLs (replace with actual video URLs or use placeholder videos)
+const videoUrls = [
+  "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
+  "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4",
+  "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4",
+  "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4",
+  "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4",
+  "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4",
+  "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerMeltdowns.mp4",
+  "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/Sintel.mp4",
+  "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/SubaruOutbackOnStreetAndDirt.mp4",
+  "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4",
 ];
 
-const agentTypes = ["Agent", "Broker", "Developer","Broker", "Others"];
+// Sample thumbnail URLs
+const thumbnailUrls = [
+  "https://picsum.photos/seed/reel1/1080/1920",
+  "https://picsum.photos/seed/reel2/1080/1920",
+  "https://picsum.photos/seed/reel3/1080/1920",
+  "https://picsum.photos/seed/reel4/1080/1920",
+  "https://picsum.photos/seed/reel5/1080/1920",
+  "https://picsum.photos/seed/reel6/1080/1920",
+  "https://picsum.photos/seed/reel7/1080/1920",
+  "https://picsum.photos/seed/reel8/1080/1920",
+  "https://picsum.photos/seed/reel9/1080/1920",
+  "https://picsum.photos/seed/reel10/1080/1920",
+];
 
-const facilities = ["Parking", "Wifi", "Others"];
+const usernames = [
+  "PropertyAgent254", "HomeFinderKE", "KenyanHomes", "RealEstateProKE",
+  "UrbanLivingNBO", "CoastalProperties", "LuxuryHomesKE", "AffordableHousesKE",
+  "DreamHomeAgent", "PropertyGuruKE", "HomeHunterNBO", "EliteProperties",
+  "PrimeRealtyKE", "ModernLivingKE", "PropertyShowcase"
+];
 
 const kenyanLocations = [
-  "Nairobi", "Mombasa", "Kisumu", "Nakuru", "Eldoret", "Thika", "Malindi", 
-  "Kitale", "Garissa", "Nyeri", "Machakos", "Meru", "Lamu", "Kericho", 
-  "Kakamega", "Narok", "Embu", "Moyale", "Isiolo", "Migori"
+  "Nairobi", "Mombasa", "Kisumu", "Nakuru", "Eldoret", "Thika", "Malindi",
+  "Kitale", "Nyeri", "Machakos", "Meru", "Lamu", "Kericho", "Kakamega",
+  "Narok", "Embu", "Kilifi", "Kiambu", "Ruiru", "Karen"
 ];
 
-const typeOf = ["Sale", "Rental"];
+const propertyDescriptions = [
+  "Stunning 3BR apartment with ocean view 🌊",
+  "Modern family home in gated community 🏡",
+  "Luxury penthouse with rooftop terrace ✨",
+  "Cozy studio perfect for young professionals 💼",
+  "Spacious villa with private pool 🏊",
+  "Prime commercial property in CBD 🏢",
+  "Beautiful townhouse with garden 🌺",
+  "Affordable starter home in quiet neighborhood 🏠",
+  "Executive apartment with gym facilities 💪",
+  "Beachfront property with private access 🏖️",
+  "Newly renovated condo in prime location 🔑",
+  "Investment opportunity - rental units 💰",
+  "Eco-friendly home with solar panels ☀️",
+  "Duplex with amazing city views 🌆",
+  "Serene countryside retreat 🌳",
+  "Student-friendly apartments near university 🎓",
+  "Gated estate with 24/7 security 🔒",
+  "Contemporary design with smart home features 📱",
+  "Spacious family home with large yard 🎪",
+  "Prime location near shopping malls 🛍️"
+];
 
-function getRandomSubset<T>(array: T[], minItems: number, maxItems: number) {
-  const subsetSize = Math.floor(Math.random() * (maxItems - minItems + 1)) + minItems;
-  return [...array].sort(() => 0.5 - Math.random()).slice(0, subsetSize);
-}
-
-async function seed() {
+async function seedReels() {
   try {
-    for (const key in COLLECTIONS) {
-      const collectionId = COLLECTIONS[key as keyof typeof COLLECTIONS];
-      const documents = await databases.listDocuments(config.databaseId!, collectionId!);
-      for (const doc of documents.documents) {
-        await databases.deleteDocument(config.databaseId!, collectionId!, doc.$id);
-      }
-    }
-    console.log("Cleared all existing data.");
-
-    const agents = [];
-    for (let i = 1; i <= 5; i++) {
-      const agent = await databases.createDocument(
+    // Clear existing reels
+    const existingReels = await databases.listDocuments(
+      config.databaseId!,
+      config.reelsCollectionId!
+    );
+    
+    for (const doc of existingReels.documents) {
+      await databases.deleteDocument(
         config.databaseId!,
-        COLLECTIONS.AGENT!,
-        ID.unique(),
-        {
-          name: `Agent ${i}`,
-          email: `agent${i}@example.com`,
-          type: agentTypes[Math.floor(Math.random() * agentTypes.length)],
-          avatar: agentImages[Math.floor(Math.random() * agentImages.length)],
-        }
+        config.reelsCollectionId!,
+        doc.$id
       );
-      agents.push(agent);
     }
-    console.log(`Seeded ${agents.length} agents.`);
+    console.log("Cleared all existing reels.");
 
-    const reviews = [];
-    for (let i = 1; i <= 20; i++) {
-      const review = await databases.createDocument(
-        config.databaseId!,
-        COLLECTIONS.REVIEWS!,
-        ID.unique(),
-        {
-          name: `Reviewer ${i}`,
-          avatar: reviewImages[Math.floor(Math.random() * reviewImages.length)],
-          review: `This is a review by Reviewer ${i}.`,
-          rating: Math.floor(Math.random() * 5) + 1,
-        }
-      );
-      reviews.push(review);
-    }
-    console.log(`Seeded ${reviews.length} reviews.`);
-
-    const galleries = [];
-    for (const image of galleryImages) {
-      const gallery = await databases.createDocument(
-        config.databaseId!,
-        COLLECTIONS.GALLERY!,
-        ID.unique(),
-        { image }
-      );
-      galleries.push(gallery);
-    }
-    console.log(`Seeded ${galleries.length} galleries.`);
-
-    for (let i = 1; i <= 20; i++) {
-      const assignedAgent = agents[Math.floor(Math.random() * agents.length)];
-      const assignedReviews = getRandomSubset(reviews, 5, 7);
-      const assignedGalleries = getRandomSubset(galleries, 3, 8);
-      const selectedFacilities = facilities.sort(() => 0.5 - Math.random()).slice(0, Math.floor(Math.random() * facilities.length) + 1);
-      const image = propertiesImages.length - 1 >= i ? propertiesImages[i] : propertiesImages[Math.floor(Math.random() * propertiesImages.length)];
+    // Create 20 sample reels
+    const reels = [];
+    for (let i = 0; i < 20; i++) {
+      const videoUrl = videoUrls[i % videoUrls.length];
+      const thumbnailUrl = thumbnailUrls[i % thumbnailUrls.length];
+      const username = usernames[i % usernames.length];
+      const location = kenyanLocations[Math.floor(Math.random() * kenyanLocations.length)];
+      const description = propertyDescriptions[i % propertyDescriptions.length];
       
-      const property = await databases.createDocument(
+      // Generate random price between 50k and 50M KES
+      const price = Math.floor(Math.random() * (50000000 - 50000) + 50000);
+      
+      // Generate random likes and views
+      const likes = Math.floor(Math.random() * 10000);
+      const views = Math.floor(Math.random() * 50000) + likes; // Views should be >= likes
+      
+      const reel = await databases.createDocument(
         config.databaseId!,
-        COLLECTIONS.PROPERTY!,
+        config.reelsCollectionId!,
         ID.unique(),
         {
-          name: `Property ${i}`,
-          type: propertyTypes[Math.floor(Math.random() * propertyTypes.length)],
-          description: `This is the description for Property ${i}.`,
-          // address: `123 Property Street, City ${i}`,
-          location: kenyanLocations[Math.floor(Math.random() * kenyanLocations.length)],
-          price: Math.floor(Math.random() * 9000) + 1000,
-          area: Math.floor(Math.random() * 3000) + 500,
-          bedrooms: Math.floor(Math.random() * 5) + 1,
-          bathrooms: Math.floor(Math.random() * 5) + 1,
-          rating: Math.floor(Math.random() * 5) + 1,
-          facilities: selectedFacilities,
-          image: image,
-          agent: assignedAgent.$id,
-          reviews: assignedReviews.map((review) => review.$id),
-          gallery: assignedGalleries.map((gallery) => gallery.$id),
+          userId: `user_${Math.floor(Math.random() * 10) + 1}`, // Random user ID
+          username: username,
+          description: description,
+          videoUrl: videoUrl,
+          thumbnailUrl: thumbnailUrl,
+          location: location,
+          price: price,
+          likes: likes,
+          views: views,
         }
       );
-      const properties = await databases.listDocuments(config.databaseId!, COLLECTIONS.PROPERTY!);
-      console.log(properties);
-      console.log(`Seeded property: ${property.name}`);
+      
+      reels.push(reel);
+      console.log(`Seeded reel ${i + 1}/20: ${username} - ${location}`);
     }
 
-    console.log("Data seeding completed.");
+    console.log(`\n✅ Successfully seeded ${reels.length} reels!`);
+    
+    // Display sample data
+    const sampleReel = reels[0];
+    console.log("\nSample Reel Data:");
+    console.log({
+      username: sampleReel.username,
+      location: sampleReel.location,
+      price: `KES ${sampleReel.price.toLocaleString()}`,
+      likes: sampleReel.likes,
+      views: sampleReel.views,
+      description: sampleReel.description
+    });
+
+    return reels;
   } catch (error) {
-    console.error("Error seeding data:", error);
+    console.error("❌ Error seeding reels:", error);
+    throw error;
   }
 }
 
-export default seed;
+export default seedReels;
+
+// Optional: Function to add more reels without clearing
+export async function addMoreReels(count: number = 10) {
+  try {
+    const reels = [];
+    for (let i = 0; i < count; i++) {
+      const videoUrl = videoUrls[Math.floor(Math.random() * videoUrls.length)];
+      const thumbnailUrl = thumbnailUrls[Math.floor(Math.random() * thumbnailUrls.length)];
+      const username = usernames[Math.floor(Math.random() * usernames.length)];
+      const location = kenyanLocations[Math.floor(Math.random() * kenyanLocations.length)];
+      const description = propertyDescriptions[Math.floor(Math.random() * propertyDescriptions.length)];
+      
+      const price = Math.floor(Math.random() * (50000000 - 50000) + 50000);
+      const likes = Math.floor(Math.random() * 10000);
+      const views = Math.floor(Math.random() * 50000) + likes;
+      
+      const reel = await databases.createDocument(
+        config.databaseId!,
+        config.reelsCollectionId!,
+        ID.unique(),
+        {
+          userId: `user_${Math.floor(Math.random() * 10) + 1}`,
+          username: username,
+          description: description,
+          videoUrl: videoUrl,
+          thumbnailUrl: thumbnailUrl,
+          location: location,
+          price: price,
+          likes: likes,
+          views: views,
+         
+        }
+      );
+      
+      reels.push(reel);
+      console.log(`Added reel ${i + 1}/${count}`);
+    }
+
+    console.log(`✅ Successfully added ${reels.length} more reels!`);
+    return reels;
+  } catch (error) {
+    console.error("❌ Error adding reels:", error);
+    throw error;
+  }
+}

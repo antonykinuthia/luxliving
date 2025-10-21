@@ -1,10 +1,9 @@
 import { Account, Avatars, Client, Databases, ID, OAuthProvider, Query, Storage, Teams,   } from "react-native-appwrite"
 import * as Linking from 'expo-linking'
 import { openAuthSessionAsync } from 'expo-web-browser'
-import { Platform } from "react-native"
 import { ImagePickerAsset } from "expo-image-picker"
-import { PropertyData, UploadResult } from "@/utils/types"
-import { router } from "expo-router"
+import { PropertyData, UploadResult, Video } from "@/utils/types"
+
 
 export const config = {
   platform : 'com.luxliving.luxliving',
@@ -19,6 +18,8 @@ export const config = {
   messagesCollectionId: process.env.EXPO_PUBLIC_APPWRITE_MESSAGES_COLLECTION_ID,
   storageCollectionId: process.env.EXPO_PUBLIC_APPWRITE_STORAGE_BUCKET_COLLECTION_ID,
   notificationsCollectionId: process.env.EXPO_PUBLIC_APPWRITE_NOTIFICATIONS_COLLECTION_ID,
+  reelsCollectionId: process.env.EXPO_PUBLIC_APPWRITE_REELS_COLLECTION_ID,
+  commentsCollectionId: process.env.EXPO_PUBLIC_APPWRITE_COMMENTS_COLLECTION_ID
 }
 
 export const client = new Client();
@@ -428,4 +429,105 @@ export async function sendPasswordResetEmail(email: string) {
       console.error('Complete password reset error:', error);
       throw new Error(error.message || 'Failed to reset password');
     }
+  }
+
+  export async function uploadReel(videoUri: string, userId: string, username: string, description: string, location: string, price: number) {
+    try {
+        const videoFile = {
+            name: `video_${Date.now()}.mp4`,
+            type: 'video/mp4',
+            uri: videoUri
+        };
+
+        const response = await storage.createFile(
+            config.storageCollectionId!,
+            ID.unique(),
+            videoFile as any
+        );
+
+        const videoUrl = storage.getFileView(
+            config.storageCollectionId!,
+            response.$id
+        );
+
+        const video = await databases.createDocument(
+            config.databaseId!,
+            config.reelsCollectionId!,
+            ID.unique(),
+            {
+                videoUrl: videoUrl.toString(),
+                thumbnailUrl: '',
+                userId,
+                username,
+                description,
+                location,
+                price,
+                likes: 0,
+                views: 0,
+                createdAt: new Date().toISOString()
+            }
+        );
+
+        return video;
+
+    } catch (error) {
+        console.error('Error uploading video:', error);
+        throw error;
+    }
+  }
+
+  export async function getReels(limit: number = 10, offset: number = 0): Promise<Video[] | undefined> {
+    try {
+        const response = await databases.listDocuments(
+            config.databaseId!,
+            config.reelsCollectionId!,
+            [
+                Query.orderDesc('$createdAt'),
+                Query.limit(limit),
+                Query.offset(offset)
+            ]
+        );
+
+        console.log("this is the response", response);
+
+        return response.documents as unknown as Video[];
+    } catch (error) {
+        console.error('Error getting reels:', error);
+    }
+  }
+
+  export async function incrementView(videoId: string, currentViews:number) {
+    try {
+        const response =await databases.updateDocument(
+            config.databaseId!,
+            config.reelsCollectionId!,
+            videoId,
+            {
+                views: currentViews + 1
+            }
+        )
+        return response;
+
+    } catch (error) {
+        console.error('Error incrementing views:', error);
+    }
+  }
+
+  export async function toggleLike(videoId:string, currentLikes: number, increment: boolean) {
+      try {
+        const result = await databases.updateDocument(
+            config.databaseId!,
+            config.reelsCollectionId!,
+            videoId,
+            {
+                likes: increment? currentLikes + 1 : currentLikes - 1
+            }
+            )
+
+            return result;
+
+      } catch (error) {
+        console.error('Error toggling like:', error);
+        throw error;
+      }
   }

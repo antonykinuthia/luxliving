@@ -5,18 +5,20 @@ import { GoBell } from "react-icons/go";
 import Search from "@/components/Search";
 import { Cards, FeaturedCards } from "@/components/Cards";
 import Filters from "@/components/Filters";
-import { useGlobalContext } from "@/lib/global-provider";
 import seed from '@/lib/seed';
 import { useAppwrite } from "@/lib/useAppwrite";
-import { getLatestProperties, getProperties } from "@/lib/appwrite";
-import { useEffect } from "react";
+import { getProperties } from "@/lib/appwrite";
+import { useEffect, useState } from "react";
 import NoResults from "@/components/NoResult";
 import { IoIosArrowRoundBack } from "react-icons/io";
-// import { FlatList } from "react-native-gesture-handler";
+import { Video} from '../../../utils/types'
 
 export default function Explore() {
   const params = useLocalSearchParams<{query?: string; filter?: string}>();
 
+  useEffect(() => {
+
+  })
   
   const {data: properties, loading, refetch} = useAppwrite({
     fn: getProperties,
@@ -68,7 +70,6 @@ export default function Explore() {
 
           <View className="mt-5">
             <Filters/>
-
            <Text className="text-xl font-rubik-bold text-black-300 mt-20">
             Found {properties?.length} Properties
            </Text>

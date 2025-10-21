@@ -69,3 +69,18 @@ export interface SignInData {
   password: string;
 }
 export type {ChatRoom, Message, User};
+
+export interface Video{
+  $id: string;
+  $createdAt: string;
+  userId: string;
+  description: string;
+  likes: number;
+  views: number;
+  isLiked?: boolean;
+  thumbnailUrl: string;
+  username: string;
+  videoUrl: string;
+  location: string;
+  price: number;
+}
