@@ -6,22 +6,15 @@ import Filters from "@/components/Filters";
 import { useLocalSearchParams, router } from "expo-router";
 import { useAppwrite } from "@/lib/useAppwrite";
 import { getLatestProperties, getProperties, uploadProperty, getReels, toggleLike, incrementView } from "@/lib/appwrite";
-import * as ImagePicker from 'expo-image-picker';
 import { useGlobalContext } from "@/lib/global-provider";
 import { Cards, FeaturedCards } from "@/components/Cards";
 import NoResults from "@/components/NoResult";
-import { CiCirclePlus } from "react-icons/ci";
 import { IoCloseCircleOutline } from "react-icons/io5";
 import images from "@/constants/images";
-import { FACILITIES, PROPERTY_TYPES } from "@/constants/data";
-import { IoHomeOutline } from "react-icons/io5";
-import { MdOutlineErrorOutline } from "react-icons/md";
-import { TiTickOutline } from "react-icons/ti";
-import { LiaMoneyBillWaveAltSolid } from "react-icons/lia";
-import icons from "@/constants/icons";
+import { PROPERTY_TYPES } from "@/constants/data";
+
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import ReelsPlayer from "@/components/Reels";
-import seedReels from "@/lib/seed";
 
 interface PropertyReel {
   $id: string;
@@ -159,105 +152,6 @@ export default function Index() {
     }
   };
 
-  const pickImage = async () => {
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      aspect: [4, 3],
-      quality: 0.8,
-    });
-
-    if (!result.canceled) {
-      setFormData({ ...formData, image: result.assets[0].uri });
-    }
-  };
-
-  const handleClose = () => {
-    setIsOpen(!isOpen);
-    setSuccess(false);
-    setErrors([]);
-  };
-
-  const validateForm = () => {
-    const newErrors: string[] = [];
-
-    if (!formData.name.trim()) newErrors.push('Property name is required');
-    if (!formData.description.trim()) newErrors.push('Description is required');
-    if (!formData.location.city.trim()) newErrors.push('City is required');
-    if (!formData.location.county.trim()) newErrors.push('County is required');
-    if (!formData.price || parseFloat(formData.price) <= 0) newErrors.push('Valid price is required');
-    if (!formData.bedrooms || parseInt(formData.bedrooms) <= 0) newErrors.push('Valid number of bedrooms is required');
-    if (!formData.bathrooms || parseInt(formData.bathrooms) <= 0) newErrors.push('Valid number of bathrooms is required');
-    if (!formData.image) newErrors.push('Property image is required');
-    if (!formData?.agentId) newErrors.push('User not authenticated');
-
-    setErrors(newErrors);
-    return newErrors.length === 0;
-  };
-
-  const handleSubmit = async () => {
-    setErrors([]);
-    setSuccess(false);
-
-    if (!validateForm()) {
-      return;
-    }
-
-    setIsLoading(true);
-
-    try {
-      const result = await uploadProperty(formData);
-
-      if (result.success) {
-        setSuccess(true);
-        Alert.alert('Success', 'Property uploaded successfully!');
-        setFormData({
-          name: '',
-          type: PROPERTY_TYPES[0],
-          description: '',
-          location: {
-            city: '',
-            county: '',
-          },
-          price: '',
-          bedrooms: '',
-          bathrooms: '',
-          facilities: [],
-          image: '',
-          agentId: user?.$id || '',
-        });
-
-        refetch({
-          filter: params.filter!,
-          query: params.query!,
-          limit: 6
-        });
-
-        setTimeout(() => {
-          setIsOpen(false);
-          setSuccess(false);
-        }, 2000);
-      } else {
-        setErrors([result.error || 'Failed to upload property']);
-        Alert.alert('Error', result.error || 'Failed to upload property');
-      }
-    } catch (error: any) {
-      const errorMessage = error.message || 'Something went wrong. Please try again.';
-      setErrors([errorMessage]);
-      Alert.alert('Error', errorMessage);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const toggleFacility = (facility: string) => {
-    setFormData(prev => ({
-      ...prev,
-      facilities: prev.facilities.includes(facility)
-        ? prev.facilities.filter(f => f !== facility)
-        : [...prev.facilities, facility]
-    }));
-  };
 
   return (
     <SafeAreaProvider>
@@ -387,7 +281,7 @@ export default function Index() {
 
           {isLoadingReels && propertyReels.length === 0 ? (
             <View className="flex-1 justify-center items-center bg-black">
-              <ActivityIndicator size="large" color="#FF6B35" />
+              <ActivityIndicator size="large" color="primary-300" />
               <Text className="text-white mt-4 font-rubik">Loading reels...</Text>
             </View>
           ) : propertyReels.length === 0 ? (
@@ -410,220 +304,6 @@ export default function Index() {
           {/* Bottom gradient fade for better UX */}
           <View className="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-black/50 to-transparent" />
         </SafeAreaView>
-      </Modal>
-
-      {/* UPLOAD PROPERTY MODAL */}
-      <TouchableOpacity 
-        onPress={() => setIsOpen(true)} 
-        className="bg-primary-300 rounded-full absolute bottom-20 right-4 p-1 z-10 shadow-lg active:opacity-80"
-        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-      >
-        <CiCirclePlus className="size-6 text-white" />
-      </TouchableOpacity>
-
-      <Modal
-        animationType="slide"
-        transparent={false}
-        visible={isOpen}
-        onRequestClose={handleClose}
-      >
-        <ScrollView className="relative flex-1 bg-white">
-          <View className="p-5">
-            <View className="flex flex-row items-center justify-between mb-6">
-              <View className="flex-row items-center gap-3">
-                <IoHomeOutline className="size-6 text-primary-300" />
-                <Text className="text-2xl font-rubik-bold text-black-300">List Your Property</Text>
-              </View>
-              <Pressable onPress={handleClose} className="bg-primary-300 rounded-full p-1 active:bg-primary-400">
-                <IoCloseCircleOutline className="size-6 text-white" />
-              </Pressable>
-            </View>
-
-            {errors.length > 0 && (
-              <View className="bg-red-50 rounded-lg p-3 mb-4">
-                {errors.map((error, index) => (
-                  <View key={index} className="flex-row items-center gap-2 mb-1">
-                    <MdOutlineErrorOutline className="size-5 text-red-600" />
-                    <Text className="text-red-600 text-sm">{error}</Text>
-                  </View>
-                ))}
-              </View>
-            )}
-
-            {success && (
-              <View className="bg-green-50 rounded-lg p-3 mb-4 flex-row items-center gap-2">
-                <TiTickOutline className="size-6 text-green-600" />
-                <Text className="text-green-600 font-rubik-medium">Property Listed Successfully</Text>
-              </View>
-            )}
-
-            <TouchableOpacity
-              onPress={pickImage}
-              className="bg-white border-2 border-dashed border-gray-300 rounded-lg p-4 mb-6 items-center justify-center h-48 active:bg-gray-50"
-            >
-              {formData.image ? (
-                <Image
-                  source={{ uri: formData.image }}
-                  className="absolute top-0 left-0 right-0 bottom-0 rounded-lg"
-                  resizeMode="cover"
-                />
-              ) : (
-                <View className="items-center">
-                  <CiCirclePlus className="size-12 text-gray-400" />
-                  <Text className="text-sm font-rubik-bold text-black-300 mt-2">Upload Property Photos</Text>
-                  <Text className="text-xs font-rubik text-gray-500">Tap to select images</Text>
-                </View>
-              )}
-            </TouchableOpacity>
-
-            <View className="mb-4">
-              <Text className="text-sm font-rubik-semibold text-black-300 mb-2">Property Name </Text>
-              <TextInput
-                className="p-3 bg-gray-50 rounded-xl border border-gray-200"
-                value={formData.name}
-                onChangeText={(text) => setFormData({ ...formData, name: text })}
-                placeholder="Enter property name"
-                placeholderTextColor='#9ca3af'
-              />
-            </View>
-
-            <View className="mb-4">
-              <Text className="text-sm font-rubik-semibold text-black-300 mb-2">Description </Text>
-              <TextInput
-                className="p-3 bg-gray-50 rounded-xl border border-gray-200"
-                value={formData.description}
-                onChangeText={(text) => setFormData({ ...formData, description: text })}
-                placeholder="Enter property description"
-                placeholderTextColor='#9ca3af'
-                multiline
-                numberOfLines={4}
-                textAlignVertical="top"
-              />
-            </View>
-
-            <View className="flex-row gap-3 mb-4">
-              <View className="flex-1">
-                <Text className="text-sm font-rubik-semibold text-black-300 mb-2">Price </Text>
-                <View className="rounded-xl border border-gray-200 bg-gray-50 flex-row items-center px-3">
-                  <LiaMoneyBillWaveAltSolid className="size-5 text-primary-300" />
-                  <TextInput
-                    className="flex-1 p-3"
-                    value={formData.price}
-                    onChangeText={(text) => setFormData({ ...formData, price: text })}
-                    placeholder="Price (KES)"
-                    placeholderTextColor='#9ca3af'
-                    keyboardType="numeric"
-                  />
-                </View>
-              </View>
-            </View>
-
-            <View className="flex-row gap-3 mb-4">
-              <View className="flex-1">
-                <Text className="text-sm font-rubik-semibold text-black-300 mb-2">Bedrooms </Text>
-                <View className="rounded-xl border border-gray-200 bg-gray-50 flex-row items-center px-3">
-                  <Image source={icons.bed} className="size-5" />
-                  <TextInput
-                    className="flex-1 p-3"
-                    value={formData.bedrooms}
-                    onChangeText={(text) => setFormData({ ...formData, bedrooms: text })}
-                    placeholder="Bedrooms"
-                    placeholderTextColor='#9ca3af'
-                    keyboardType="numeric"
-                  />
-                </View>
-              </View>
-
-              <View className="flex-1">
-                <Text className="text-sm font-rubik-semibold text-black-300 mb-2">Bathrooms </Text>
-                <View className="rounded-xl border border-gray-200 bg-gray-50 flex-row items-center px-3">
-                  <Image source={icons.bath} className="size-5" />
-                  <TextInput
-                    className="flex-1 p-3"
-                    value={formData.bathrooms}
-                    onChangeText={(text) => setFormData({ ...formData, bathrooms: text })}
-                    placeholder="Bathrooms"
-                    placeholderTextColor='#9ca3af'
-                    keyboardType="numeric"
-                  />
-                </View>
-              </View>
-            </View>
-
-            <View className="mb-4">
-              <Text className="text-sm font-rubik-semibold text-black-300 mb-2">City </Text>
-              <View className="rounded-xl border border-gray-200 bg-gray-50 flex-row items-center px-3">
-                <Image source={icons.location} className="size-5" />
-                <TextInput
-                  className="flex-1 p-3"
-                  value={formData.location.city}
-                  onChangeText={(text) => setFormData({
-                    ...formData,
-                    location: { ...formData.location, city: text }
-                  })}
-                  placeholder="Enter city"
-                  placeholderTextColor='#9ca3af'
-                />
-              </View>
-            </View>
-
-            <View className="mb-4">
-              <Text className="text-sm font-rubik-semibold text-black-300 mb-2">County </Text>
-              <View className="rounded-xl border border-gray-200 bg-gray-50 flex-row items-center px-3">
-                <Image source={icons.location} className="size-5" />
-                <TextInput
-                  className="flex-1 p-3"
-                  value={formData.location.county}
-                  onChangeText={(text) => setFormData({
-                    ...formData,
-                    location: { ...formData.location, county: text }
-                  })}
-                  placeholder="Enter county"
-                  placeholderTextColor='#9ca3af'
-                />
-              </View>
-            </View>
-
-            {FACILITIES && FACILITIES.length > 0 && (
-              <View className="mb-4">
-                <Text className="text-sm font-rubik-semibold text-black-300 mb-2">Facilities</Text>
-                <View className="flex-row flex-wrap gap-2">
-                  {FACILITIES.map((facility) => (
-                    <TouchableOpacity
-                      key={facility}
-                      onPress={() => toggleFacility(facility)}
-                      className={`px-4 py-2 rounded-full border ${
-                        formData.facilities.includes(facility)
-                          ? 'bg-primary-300 border-primary-300'
-                          : 'bg-white border-gray-300'
-                      }`}
-                    >
-                      <Text className={`text-sm ${
-                        formData.facilities.includes(facility)
-                          ? 'text-white font-rubik-medium'
-                          : 'text-gray-700 font-rubik'
-                      }`}>
-                        {facility}
-                      </Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-              </View>
-            )}
-
-            <TouchableOpacity
-              className={`bg-primary-300 p-4 rounded-xl items-center mt-6 mb-6 ${isLoading ? 'opacity-70' : 'active:opacity-90'}`}
-              onPress={handleSubmit}
-              disabled={isLoading}
-            >
-              {isLoading ? (
-                <ActivityIndicator color="#fff" />
-              ) : (
-                <Text className="text-white font-rubik-bold text-base">List Property</Text>
-              )}
-            </TouchableOpacity>
-          </View>
-        </ScrollView>
       </Modal>
     </SafeAreaProvider>
   );

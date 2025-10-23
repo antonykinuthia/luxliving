@@ -3,6 +3,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Video as VideoType } from '../utils/types';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import { useEvent } from 'expo';
+import icons from '@/constants/icons';
 
 const { height: screenHeight, width: screenWidth } = Dimensions.get('window');
 
@@ -106,7 +107,7 @@ const VideoItem = ({ video, isActive, onLike }: VideoItemProps) => {
         
         {loading && (
           <View className="absolute inset-0 justify-center items-center bg-black/50">
-            <ActivityIndicator size="large" color="#fff" />
+            <ActivityIndicator size="large" color="primary-300" />
           </View>
         )}
 
@@ -129,7 +130,7 @@ const VideoItem = ({ video, isActive, onLike }: VideoItemProps) => {
           className="items-center"
         >
           <Text className="text-xl bg-transparent">
-            {isLiked ? '❤️' : '🤍'}
+            {isLiked ? '💖' : '🤍'}
           </Text>
           <Text className="text-white text-xs mt-1">
             {video.likes}

@@ -431,7 +431,7 @@ export async function sendPasswordResetEmail(email: string) {
     }
   }
 
-  export async function uploadReel(videoUri: string, userId: string, username: string, description: string, location: string, price: number) {
+  export async function uploadReel(videoUri: string, userId: string, username: string, description: string, location: string, price: string) {
     try {
         const videoFile = {
             name: `video_${Date.now()}.mp4`,
@@ -444,6 +444,10 @@ export async function sendPasswordResetEmail(email: string) {
             ID.unique(),
             videoFile as any
         );
+
+        if(!response || !response.$id){
+            throw new Error('Failed to upload video');
+        }
 
         const videoUrl = storage.getFileView(
             config.storageCollectionId!,
@@ -461,7 +465,7 @@ export async function sendPasswordResetEmail(email: string) {
                 username,
                 description,
                 location,
-                price,
+                price: price ? parseInt(price) : 0,
                 likes: 0,
                 views: 0,
                 createdAt: new Date().toISOString()
