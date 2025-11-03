@@ -3,6 +3,8 @@ import * as Linking from 'expo-linking'
 import { openAuthSessionAsync } from 'expo-web-browser'
 import { ImagePickerAsset } from "expo-image-picker"
 import { PropertyData, UploadResult, Video } from "@/utils/types"
+import { convertOffsetToTimes } from "framer-motion"
+import { Alert } from "react-native"
 
 
 export const config = {
@@ -19,7 +21,8 @@ export const config = {
   storageCollectionId: process.env.EXPO_PUBLIC_APPWRITE_STORAGE_BUCKET_COLLECTION_ID,
   notificationsCollectionId: process.env.EXPO_PUBLIC_APPWRITE_NOTIFICATIONS_COLLECTION_ID,
   reelsCollectionId: process.env.EXPO_PUBLIC_APPWRITE_REELS_COLLECTION_ID,
-  commentsCollectionId: process.env.EXPO_PUBLIC_APPWRITE_COMMENTS_COLLECTION_ID
+  commentsCollectionId: process.env.EXPO_PUBLIC_APPWRITE_COMMENTS_COLLECTION_ID,
+  bookingCollectionId: process.env.EXPO_PUBLIC_APPWRITE_BOOKING_COLLECTION_ID
 }
 
 export const client = new Client();
@@ -271,8 +274,8 @@ export async function uploadProperty(propertyData: PropertyData): Promise<Upload
             facilities: propertyData.facilities, 
             imageId: imageId || '',
             agentId: propertyData.agentId,
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString()
+            $createdAt: new Date().toISOString(),
+            $updatedAt: new Date().toISOString()
           };
 
           const response = await databases.createDocument(
@@ -468,7 +471,7 @@ export async function sendPasswordResetEmail(email: string) {
                 price: price ? parseInt(price) : 0,
                 likes: 0,
                 views: 0,
-                createdAt: new Date().toISOString()
+                $createdAt: new Date().toISOString()
             }
         );
 
@@ -534,4 +537,247 @@ export async function sendPasswordResetEmail(email: string) {
         console.error('Error toggling like:', error);
         throw error;
       }
+  }
+
+
+  export async function createBooking ({ propertyId, agentId, date, time  }: { propertyId: string, agentId: string, date: string, time: string}) {
+    try {
+        
+        const user = await account.get();
+
+        const bookingDate = convertToDateTime(date, time);
+
+        const startOfDay = new Date(date);
+        startOfDay.setHours(0, 0, 0, 0);
+        
+        const endOfDay = new Date(date);
+        endOfDay.setHours(23, 59, 59, 999);
+    
+        const existingBookings = await databases.listDocuments(
+            config.databaseId!,
+            config.bookingCollectionId!,
+            [
+                Query.equal('propertyId', propertyId),
+                // Query.equal('bookingTime', time),
+                // Query.greaterThanEqual('bookingDate', startOfDay.toISOString()),
+                // Query.lessThanEqual('bookingDate', endOfDay.toISOString()),
+                // Query.equal('status', ['pending', 'confirmed', 'cancelled'])
+            ]
+        );
+    
+        if(existingBookings.total > 0){
+            const exactProperty = existingBookings.documents.find(
+                (booking: any) => booking.propertyId === propertyId
+              );
+              if (exactProperty) {
+                throw new Error('You already have a booking for this property');
+              }
+        }
+    
+        const booking = await databases.createDocument(
+            config.databaseId!,
+            config.bookingCollectionId!,
+            ID.unique(),
+            {
+                userId: user.$id,
+                propertyId,
+                agentId,
+                bookingDate: bookingDate,
+                bookingTime: time,
+                status: 'pending',
+                $createdAt: new Date().toISOString(),
+                $updatedAt: new Date().toISOString()
+            }
+        )
+    
+        return booking
+    } catch (error) {
+        console.error('Error creating booking:', error);
+        throw error;
+    }
+
+  };
+
+export async function getBookings(status?: string) {
+    try {
+      const user = await account.get();
+  
+      const queries = [
+        Query.equal('userId', user.$id),
+        Query.orderDesc('$createdAt')
+      ];
+  
+      if (status && typeof status === 'string' && status.trim() !== '') {
+        queries.push(Query.equal('status', status));
+      }
+  
+      const bookings = await databases.listDocuments(
+        config.databaseId!,
+        config.bookingCollectionId!,
+        queries
+      );
+  
+      if (!bookings.documents || bookings.documents.length === 0) {
+        return [];
+      }
+  
+      // Extract unique property and agent IDs
+      const propertyIds = [...new Set(bookings.documents.map((b: any) => b.propertyId))];
+      const agentIds = [...new Set(bookings.documents.map((b: any) => b.agentId))];
+  
+      // Fetch all properties and agents in parallel
+      const [propertiesData, agentsData] = await Promise.all([
+        Promise.all(
+          propertyIds.map((id) =>
+            databases.getDocument(
+              config.databaseId!,
+              config.propertiesCollectionId!,
+              id
+            ).catch((err) => {
+              console.error(`Error fetching property ${id}:`, err);
+              return {
+                $id: id,
+                name: 'Property Unavailable',
+                address: 'N/A',
+                image: 'https://via.placeholder.com/400x300',
+              };
+            })
+          )
+        ),
+        Promise.all(
+          agentIds.map((id) =>
+            databases.getDocument(
+              config.databaseId!,
+              config.agentsCollectionId!,
+              id
+            ).catch((err) => {
+              console.error(`Error fetching agent ${id}:`, err);
+              return {
+                $id: id,
+                name: 'Agent Unavailable',
+                avatar: 'https://via.placeholder.com/100',
+              };
+            })
+          )
+        ),
+      ]);
+  
+      // Create lookup maps
+      const propertiesMap = new Map(propertiesData.map((p: any) => [p.$id, p]));
+      const agentsMap = new Map(agentsData.map((a: any) => [a.$id, a]));
+  
+      // Combine booking data with property and agent details
+      const bookingsWithDetails = bookings.documents.map((booking: any) => ({
+        ...booking,
+        property: propertiesMap.get(booking.propertyId),
+        agent: agentsMap.get(booking.agentId),
+      }));
+  
+      return bookingsWithDetails;
+    } catch (error) {
+      console.error('Error getting bookings:', error);    
+      throw error;
+    }
+  }
+
+  export async function updateBookingStatus(bookingId:string, status: string) {
+      try {
+        const booking = await databases.getDocument(
+            config.databaseId!,
+            config.bookingCollectionId!,
+            bookingId, 
+            {
+                status,
+                $updatedAt: new Date().toISOString()
+            }
+            
+        );
+        return booking;
+      } catch (error) {
+        console.error('Error updating booking:', error);
+      }
+  }
+
+  export async function getAvailableTimeSlots(propertyId: string, date: string) {
+      try {
+        const timeSlots = [
+            '09:00 AM', '10:00 AM', '11:00 AM', 
+            '12:00 PM', '01:00 PM', '02:00 PM', 
+            '03:00 PM', '04:00 PM', '05:00 PM'
+        ];
+
+        const existingSlots = await databases.listDocuments(
+            config.databaseId!,
+            config.bookingCollectionId!,
+            [
+                Query.equal('property', propertyId),
+                Query.equal('bookingDate', date),
+                Query.equal('status', '["pending", "confirmed", "cancelled"]')
+            ]
+        );
+
+        const bookedSlots = existingSlots.documents.map((booking) => booking.bookingTime);
+
+        const availableSlots = timeSlots.filter((slot) => !bookedSlots.includes(slot));
+
+        return availableSlots;
+
+      } catch (error) {
+        console.error('Error getting available time slots:', error);
+      }
+  }
+
+  export async function cancelBooking(bookingId: string) {
+      try {
+        const booking =await databases.updateDocument(
+            config.databaseId!,
+            config.bookingCollectionId!,
+            bookingId,
+            {
+                status: 'cancelled',
+                $updatedAt: new Date().toISOString()
+            }
+        )
+
+        return  booking;
+      } catch (error) {
+        console.error('Error canceling booking:', error);
+        throw error;
+      }
+  }
+
+  export async function rescheduleBooking(bookingId: string, newDate: string, newTime: string) {
+      try {
+        const bookingTime = convertToDateTime(newDate, newTime);
+
+        const booking = await databases.updateDocument(
+            config.databaseId!,
+            config.bookingCollectionId!,
+            bookingId,{
+                bookingDate: bookingTime,
+                bookingTime: newTime,
+                status: 'pending',
+                $updatedAt: new Date().toISOString()
+            }
+        )
+        return booking
+      } catch (error) {
+        console.error('Error rescheduling booking:', error);
+        throw error;
+      }
+  }
+  function convertToDateTime (dateString: string, timeString: string):string{
+    const [time, period] = timeString.split(' ');
+    let [hours, minutes] = time.split(':').map(Number);
+
+    if (period === 'PM' && hours !== 12) {
+        hours += 12;
+      } else if (period === 'AM' && hours === 12) {
+        hours = 0;
+      }
+
+      const dateTime = new Date(dateString);
+        dateTime.setHours(hours, minutes, 0, 0);
+
+        return dateTime.toISOString();
   }

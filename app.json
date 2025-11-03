@@ -39,6 +39,12 @@
           "supportsBackgroundPlayback": true,
             "supportsPictureInPicture": true
         }
+      ],
+      [
+        "expo-calendar",
+        {
+          "calendarPermission": "The app needs to access your calendar"
+        }
       ]
     ],
     "experiments": {

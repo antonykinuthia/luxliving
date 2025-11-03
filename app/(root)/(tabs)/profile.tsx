@@ -73,8 +73,8 @@ export default function profile() {
 
         <View className='flex flex-row justify-center mt-5'>
           <View className='flex flex-col items-center relative mt-5'>
-            <Image source={images.avatar} className='rounded-full'style={{width: 100, height: 100}}/>
-            {/* <Image source={{uri: user?.avatar}} className='rounded-full size-44 relative'/> */}
+            {/* <Image source={images.avatar} className='rounded-full'style={{width: 100, height: 100}}/> */}
+            <Image source={{uri: user?.avatar}} className='rounded-full size-20 relative'/>
             <TouchableOpacity className='absolute bottom-11 right-11'>
               <BiSolidEdit  className='size-6'/>
               {/* TODO implement the edit photo functionality. */}
@@ -85,7 +85,7 @@ export default function profile() {
         </View>
 
         <View className='flex flex-col mt-10'>
-                <SettingsItem icon={icons.calendar} title='My Bookings'/>
+                <SettingsItem onPress={() => router.push('/bookings/page')} icon={icons.calendar} title='My Bookings' />
                 <SettingsItem icon={icons.wallet} title='My Payments'/>
             </View>
 
