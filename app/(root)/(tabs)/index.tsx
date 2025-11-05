@@ -32,10 +32,6 @@ interface PropertyReel {
 }
 
 export default function Index() {
-  const [isLoading, setIsLoading] = useState(false);
-  const [isOpen, setIsOpen] = useState(false);
-  const [success, setSuccess] = useState(false);
-  const [errors, setErrors] = useState<string[]>([]);
   const [reelsModalOpen, setReelsModalOpen] = useState(false);
   const [isLoadingReels, setIsLoadingReels] = useState(false);
   const [propertyReels, setPropertyReels] = useState<PropertyReel[]>([]);
@@ -173,7 +169,7 @@ export default function Index() {
             <View className="px-5">
               <View className="flex flex-row justify-between items-center mt-5">
                 <View className="flex flex-row items-center">
-                  <Image source={images.avatar} className="size-12 rounded-full" />
+                  <Image source={{ uri: user?.avatar }} className="size-12 rounded-full" />
                   <View className="flex flex-col items-start ml-2 justify-center">
                     <Text className="text-xs font-rubik text-black-100">welcome</Text>
                     <Text className="text-base font-rubik-medium text-black-300">{user?.name || '1764'}</Text>

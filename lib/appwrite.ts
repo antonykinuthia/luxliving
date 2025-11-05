@@ -3,7 +3,6 @@ import * as Linking from 'expo-linking'
 import { openAuthSessionAsync } from 'expo-web-browser'
 import { ImagePickerAsset } from "expo-image-picker"
 import { PropertyData, UploadResult, Video } from "@/utils/types"
-import { convertOffsetToTimes } from "framer-motion"
 import { Alert } from "react-native"
 
 
@@ -22,7 +21,8 @@ export const config = {
   notificationsCollectionId: process.env.EXPO_PUBLIC_APPWRITE_NOTIFICATIONS_COLLECTION_ID,
   reelsCollectionId: process.env.EXPO_PUBLIC_APPWRITE_REELS_COLLECTION_ID,
   commentsCollectionId: process.env.EXPO_PUBLIC_APPWRITE_COMMENTS_COLLECTION_ID,
-  bookingCollectionId: process.env.EXPO_PUBLIC_APPWRITE_BOOKING_COLLECTION_ID
+  bookingCollectionId: process.env.EXPO_PUBLIC_APPWRITE_BOOKING_COLLECTION_ID,
+  usersCollectionId: process.env.EXPO_PUBLIC_APPWRITE_USERS_COLLECTION_ID
 }
 
 export const client = new Client();
@@ -89,24 +89,55 @@ export async function signUserIn(email:string, password:string, ){
         console.error('Login error:', error);
     }
 }
-export async function signUserUp (email: string, password: string, name:string){
- try {
-    const newUser = await account.create(
-        ID.unique(),
-        email,
-        password,
-        name
-    );
+export async function signUserUp (email: string, password: string, name: string, role: string){
+    try {
+       const newUser = await account.create(
+           ID.unique(),
+           email,
+           password,
+           name,
+       );
+   
+       if(!newUser) throw new Error('something broke oops😞');
+   
+       const session = await signUserIn(email, password);
+       const avatarUrl = avatar.getInitials(name);
+   
+       // Use newUser.$id as the document ID (second parameter)
+       // Do NOT include $id in the data object (fourth parameter)
+       const userDocument = await databases.createDocument(
+           config.databaseId!,
+           config.usersCollectionId!,
+           newUser.$id, // ← Use auth user ID as document ID
+           {
+               // Remove $id from here!
+               name: name,
+               email: email,
+               role: role,
+               avatar: avatarUrl.toString()
+           }
+       )
+      
+       if(userDocument.role === 'agent') {
+           const agentDocument = await databases.createDocument(
+               config.databaseId!,
+               config.agentsCollectionId!,
+                userDocument.$id, 
+               {
 
-    if(!newUser) throw new Error('something broke oops😞');
-
-   const session = await  signUserIn(email, password);
-
-   return {session, user: newUser};
- } catch (error) {
-    console.error(error)
-    throw error;
- }
+                   name: name,
+                   email: email,
+                   avatar: avatarUrl.toString()
+               }
+           )
+           return {session, user: newUser, profile: userDocument, agent: agentDocument};
+       }
+   
+       return {session, user: newUser, profile: userDocument};
+    } catch (error) {
+       console.error(error)
+       throw error;
+    }
 }
 
 export async function logout() {
@@ -570,6 +601,7 @@ export async function sendPasswordResetEmail(email: string) {
                 (booking: any) => booking.propertyId === propertyId
               );
               if (exactProperty) {
+                Alert.alert('Error', 'You already have a booking for this property');
                 throw new Error('You already have a booking for this property');
               }
         }
@@ -589,6 +621,7 @@ export async function sendPasswordResetEmail(email: string) {
                 $updatedAt: new Date().toISOString()
             }
         )
+        Alert.alert('Booking created successfully');
     
         return booking
     } catch (error) {
@@ -682,13 +715,12 @@ export async function getBookings(status?: string) {
 
   export async function updateBookingStatus(bookingId:string, status: string) {
       try {
-        const booking = await databases.getDocument(
+        const booking = await databases.updateDocument(
             config.databaseId!,
             config.bookingCollectionId!,
             bookingId, 
             {
-                status,
-                $updatedAt: new Date().toISOString()
+                status
             }
             
         );
@@ -735,7 +767,6 @@ export async function getBookings(status?: string) {
             bookingId,
             {
                 status: 'cancelled',
-                $updatedAt: new Date().toISOString()
             }
         )
 
@@ -756,8 +787,7 @@ export async function getBookings(status?: string) {
             bookingId,{
                 bookingDate: bookingTime,
                 bookingTime: newTime,
-                status: 'pending',
-                $updatedAt: new Date().toISOString()
+                status: 'pending'
             }
         )
         return booking
@@ -781,3 +811,66 @@ export async function getBookings(status?: string) {
 
         return dateTime.toISOString();
   }
+
+  export async function getProfileData(userId: string) {
+    try {
+        const user = await account.get();
+        
+        const userProfile = await databases.getDocument(
+            config.databaseId!,
+            config.usersCollectionId!,
+            userId
+        );
+
+        if (!userProfile) {
+            throw new Error('User profile not found');
+        }
+        
+        if (userProfile.role === 'agent') {
+            const [agentData, properties, reels] = await Promise.all([
+                databases.getDocument(
+                    config.databaseId!,
+                    config.agentsCollectionId!,
+                    userProfile.$id 
+                ).catch(() => null),
+                
+                databases.listDocuments(
+                    config.databaseId!,
+                    config.propertiesCollectionId!,
+                    [Query.equal('agent', userProfile.$id)]
+                ),
+                
+                databases.listDocuments(
+                    config.databaseId!,
+                    config.reelsCollectionId!,
+                    [Query.equal('username', userProfile.$id)]
+                )
+            ]);
+
+            return {
+                user: user,
+                profile: userProfile,
+                agent: agentData,
+                properties: properties.documents,
+                reels: reels.documents,
+                role: 'agent'
+            };
+        } else {
+            const reels = await databases.listDocuments(
+                config.databaseId!,
+                config.reelsCollectionId!,
+                [Query.equal('creator', userProfile.$id)]
+            );
+
+            return {
+                user: user,
+                profile: userProfile,
+                reels: reels.documents,
+                role: 'tenant'
+            };
+        }
+    } catch (error) {
+        console.error('Error getting profile data:', error);
+        throw error;
+    }
+}

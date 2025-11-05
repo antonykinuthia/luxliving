@@ -73,13 +73,7 @@ export default function profile() {
 
         <View className='flex flex-row justify-center mt-5'>
           <View className='flex flex-col items-center relative mt-5'>
-            {/* <Image source={images.avatar} className='rounded-full'style={{width: 100, height: 100}}/> */}
             <Image source={{uri: user?.avatar}} className='rounded-full size-20 relative'/>
-            <TouchableOpacity className='absolute bottom-11 right-11'>
-              <BiSolidEdit  className='size-6'/>
-              {/* TODO implement the edit photo functionality. */}
-            </TouchableOpacity>
-            {/* <Text className='text-2xl font-rubik-bold mt-2'>1764 | Crazy dev.</Text> */}
                 <Text className='text-2xl font-rubik-bold mt-2'>{user?.name}</Text>
           </View>
         </View>
@@ -91,7 +85,7 @@ export default function profile() {
 
             <View className='flex flex-col mt-5 bordr-t pt-5 border-primary-200'>
           
-                 <SettingsItem icon={icons.person} title='Profile'/>
+                 <SettingsItem icon={icons.person} title='Profile' onPress={() => router.push('/profile/profile')}/>
 
                   <SettingsItem icon={icons.shield} title='Security'/> 
 

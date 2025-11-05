@@ -5,11 +5,13 @@ import { Redirect, router } from 'expo-router';
 import { login, signUserUp } from '@/lib/appwrite';
 import images from '@/constants/images';
 import { FcGoogle } from "react-icons/fc";
+import{ Picker } from '@react-native-picker/picker';
 
 const signUp = () => {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [role, setRole] = useState('tenant');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { refetch, loading, isLoggedIn } = useGlobalContext();
 
@@ -27,7 +29,7 @@ const signUp = () => {
   }
 
   const handleEmailSignup = async () => {
-    if (!name || !email || !password) {
+    if (!name || !email || !password || !role) {
       Alert.alert('Error', 'Please fill in all fields');
       return;
     }
@@ -40,12 +42,11 @@ const signUp = () => {
     setIsSubmitting(true);
 
     try {
-      const result = await signUserUp(email, password,name);
+      const result = await signUserUp(email, password,name,role);
 
       if (result) {
         refetch();
         Alert.alert('Success', 'Account created successfully!');
-        console.log('Email signup successful!');
       }
     } catch (error: any) {
       Alert.alert('Error', error.message || 'Failed to create account');
@@ -114,6 +115,24 @@ const signUp = () => {
               editable={!isSubmitting}
             />
 
+            <Text className='text-lg font-rubik-medium text-black-200 mt-4 mb-2'>
+              I am a:
+            </Text>
+
+            <View className='border border-black-100 rounded-lg overflow-hidden '>
+              <Picker
+              selectedValue={role}
+              onValueChange={(itemValue) => setRole(itemValue)}
+              mode='dropdown'
+              enabled={!isSubmitting}
+              style={{ fontFamily: 'Rubik',
+              color: '#000000', }}
+              >
+                <Picker.Item label='Tenant' value='tenant' />
+                <Picker.Item label='Agent' value='agent' />
+              </Picker>
+            </View>
+
             <TouchableOpacity 
               onPress={handleEmailSignup} 
               className={`bg-primary-300 rounded-lg w-full py-1 mt-6 ${isSubmitting ? 'opacity-50' : ''}`}
@@ -125,14 +144,12 @@ const signUp = () => {
             </TouchableOpacity>
           </View>
 
-          {/* Divider */}
           <View className='flex-row items-center my-6'>
             <View className='flex-1 h-[1px] bg-gray-300' />
             <Text className='mx-4 text-black-200 font-rubik'>OR</Text>
             <View className='flex-1 h-[1px] bg-gray-300' />
           </View>
 
-          {/* Google Signup */}
           <Text className='text-lg font-rubik text-black-200 text-center'>
             Sign up with Google
           </Text>

@@ -1,5 +1,6 @@
-import { cancelBooking } from '@/lib/appwrite';
+import { cancelBooking, rescheduleBooking } from '@/lib/appwrite';
 import { router } from 'expo-router';
+import { a } from 'framer-motion/dist/types.d-CQt5spQA';
 import React from 'react'
 import { CiLocationOn } from 'react-icons/ci';
 import { IoCalendarOutline } from 'react-icons/io5';
@@ -61,11 +62,17 @@ const BookingCard = ({bookings, onUpdate}: Props) => {
             ]
         )
       }
-      const handleReschedule = () => {
-          router.push({
-              pathname:'/properties/[id]',
-              params: {id: property.$id, rescheduleId: bookings.$id},
-          })
+      const handleReschedule = async() => {
+        try {
+            await rescheduleBooking(bookings.$id!, bookings.date, bookings.time);
+            Alert.alert('Booking rescheduled successfully');
+            router.push({
+                pathname:'/properties/[id]',
+                params: {id: property.$id, rescheduleId: bookings.$id},
+            })
+        } catch (error) {
+            
+        }
       };
 
       const isPast = new Date(bookings.date) < new Date();
@@ -121,19 +128,25 @@ const BookingCard = ({bookings, onUpdate}: Props) => {
                 <View className='flex-row items-center mb-2'>
                     <IoCalendarOutline className='size-4 text-primary-300'/>
                     <Text className='text-sm font-rubik-medium text-black-300 ml-2'>
+                        {formatDate(bookings.bookingDate)}
+                    </Text>
+                    <Text className='text-sm font-rubik-medium text-black-300 ml-2'>
                         {bookings.bookingTime}
                     </Text>
                 </View>
 
-                <View className='flex-row items-center pt-3 border-t border-primary-100 mb-3'>
+                <View className='flex-row items-center pt-3 border-t border-primary-200 mb-3'>
                     <Image
                     source={{uri: agent?.avatar}}
                     className='size-10 rounded-full'
                     />
                     <View className='ml-3 flex-1'>
-                        <Text className='text-sm font-rubik-semibold text-black-300'>
-                            {agent?.name}
-                        </Text>
+                        <TouchableOpacity onPress={() => router.push(`/agents/${agent?.$id}`)}>
+                            <Text className='text-sm font-rubik-semibold text-black-300'>
+                                {agent?.name}
+                            </Text>
+
+                        </TouchableOpacity>
                     </View>
                 </View>
 

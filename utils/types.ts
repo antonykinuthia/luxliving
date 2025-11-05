@@ -61,6 +61,7 @@ export interface PropertyData {
     email: string;
     password: string;
     name: string;
+    role: string;
   }
 
 
